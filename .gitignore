@@ -1,0 +1,36 @@
+*.iml
+.gradle
+/local.properties
+/.idea/caches
+/.idea/libraries
+/.idea/modules.xml
+/.idea/workspace.xml
+/.idea/navEditor.xml
+/.idea/assetWizardSettings.xml
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# Python / ML
+**/__pycache__/
+**/.venv/
+**/venv/
+ml/runs/
+ml/dataset/raw/**
+!ml/dataset/raw/.gitkeep
+ml/dataset/all/
+ml/dataset/images/**/*
+!ml/dataset/images/**/.gitkeep
+ml/dataset/labels/**/*
+!ml/dataset/labels/**/.gitkeep
+*.pt
+backend/.env
+backend/data/chroma/
+backend/.venv/
+
+# Large binaries (track intentionally if needed)
+# app/src/main/assets/model.tflite

@@ -1,0 +1,16 @@
+# Rutas relativas a este archivo (ml/dataset/)
+path: .
+train: images/train
+val: images/val
+test: images/test
+
+nc: 8
+names:
+  0: incubadora
+  1: agitador_orbital
+  2: balanza_analitica
+  3: phmetro
+  4: centrifugadora
+  5: estufa_secado
+  6: banio_maria
+  7: microscopio

@@ -1,0 +1,66 @@
+[
+  {
+    "id": "incubadora",
+    "name": "Incubadora",
+    "function": "Mantiene temperatura controlada para incubación de muestras ruminales y cultivos asociados a ensayos del laboratorio.",
+    "components": ["Cámara interna", "Termostato", "Bandejas", "Panel de control", "Puerta con sello"],
+    "usage": "Verificar setpoint, colocar muestras en recipientes cerrados, evitar abrir la puerta innecesariamente y registrar tiempos de incubación según la guía de práctica.",
+    "safety": "Usar guantes y bata. Riesgo de quemaduras por superficies calientes y contaminación cruzada. No incubar material volátil sin autorización."
+  },
+  {
+    "id": "agitador_orbital",
+    "name": "Agitador orbital",
+    "function": "Homogeneiza mezclas y suspensiones mediante agitación orbital a velocidad regulable.",
+    "components": ["Plataforma", "Motor", "Control de rpm", "Sujeciones / clamps"],
+    "usage": "Fijar recipientes, seleccionar velocidad adecuada al volumen y tiempo de agitación indicado en el protocolo.",
+    "safety": "EPP: bata y gafas si hay riesgo de salpicadura. Asegurar frascos antes de iniciar. Apagar ante vibración anormal."
+  },
+  {
+    "id": "balanza_analitica",
+    "name": "Balanza analítica",
+    "function": "Medición precisa de masa de reactivos y muestras para ensayos cuantitativos.",
+    "components": ["Plato", "Cámara antiviento", "Display", "Teclas de tara", "Nivel"],
+    "usage": "Nivelar, tarar el recipiente, pesar sin corrientes de aire y registrar la masa con la precisión requerida.",
+    "safety": "No sobrecargar. Limpiar derrames de inmediato. Evitar corrosivos sobre el plato sin protección."
+  },
+  {
+    "id": "phmetro",
+    "name": "pHmetro",
+    "function": "Determina el pH de fluidos ruminales y soluciones del laboratorio.",
+    "components": ["Electrodo", "Cuerpo del medidor", "Soluciones buffer", "Soporte"],
+    "usage": "Calibrar con buffers, enjuagar el electrodo, medir la muestra y limpiar al finalizar.",
+    "safety": "Usar guantes. Manejar buffers y muestras con cuidado. No dejar el electrodo seco."
+  },
+  {
+    "id": "centrifugadora",
+    "name": "Centrifugadora",
+    "function": "Separa fases de muestras por fuerza centrífuga para análisis posteriores.",
+    "components": ["Rotor", "Tubos", "Tapa de seguridad", "Control de tiempo/rpm"],
+    "usage": "Balancear tubos opuestos, cerrar tapa, programar rpm/tiempo del protocolo y esperar detención completa.",
+    "safety": "Nunca abrir en movimiento. Balancear masas. Usar tubos compatibles. Riesgo mecánico y de aerosoles."
+  },
+  {
+    "id": "estufa_secado",
+    "name": "Estufa de secado",
+    "function": "Seca material de vidrio y muestras a temperatura controlada.",
+    "components": ["Cámara", "Resistencias", "Termostato", "Bandejas"],
+    "usage": "Colocar material limpio, fijar temperatura según guía y retirar con pinzas o guantes térmicos.",
+    "safety": "Riesgo de quemaduras. No introducir solventes inflamables. Verificar que la puerta cierre correctamente."
+  },
+  {
+    "id": "banio_maria",
+    "name": "Baño María",
+    "function": "Calentamiento indirecto de tubos o frascos en agua a temperatura estable.",
+    "components": ["Tina", "Resistencia", "Termostato", "Rejilla / soporte"],
+    "usage": "Llenar con agua limpia al nivel indicado, ajustar temperatura y colocar recipientes de forma estable.",
+    "safety": "Evitar salpicaduras de agua caliente. Desconectar antes de vaciar. No sumergir equipos eléctricos."
+  },
+  {
+    "id": "microscopio",
+    "name": "Microscopio",
+    "function": "Observación de preparaciones asociadas a prácticas de rumiología y morfología microscópica.",
+    "components": ["Oculares", "Objetivos", "Platina", "Foco", "Fuente de luz"],
+    "usage": "Colocar el portaobjetos, iniciar con objetivo de menor aumento, enfocar y aumentar progresivamente.",
+    "safety": "No tocar lentes con los dedos. Apagar luz al terminar. Manipular preparaciones con guantes si aplica."
+  }
+]

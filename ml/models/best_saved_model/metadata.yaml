@@ -1,0 +1,21 @@
+description: Ultralytics best model trained on C:\Users\Dispositivo\AndroidStudioProjects\deteccionderostro\ml\dataset\_runtime_data.yaml
+author: Ultralytics
+date: '2026-08-26T23:34:58.514829'
+version: 8.3.40
+license: AGPL-3.0 License (https://ultralytics.com/license)
+docs: https://docs.ultralytics.com
+stride: 32
+task: detect
+batch: 1
+imgsz:
+- 160
+- 160
+names:
+  0: incubadora
+  1: agitador_orbital
+  2: balanza_analitica
+  3: phmetro
+  4: centrifugadora
+  5: estufa_secado
+  6: banio_maria
+  7: microscopio

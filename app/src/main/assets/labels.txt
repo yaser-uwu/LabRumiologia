@@ -1,0 +1,8 @@
+incubadora
+agitador_orbital
+balanza_analitica
+phmetro
+centrifugadora
+estufa_secado
+banio_maria
+microscopio
