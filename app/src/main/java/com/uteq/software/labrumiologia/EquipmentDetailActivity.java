@@ -25,22 +25,24 @@ public class EquipmentDetailActivity extends AppCompatActivity {
         int pct = Math.round(getIntent().getFloatExtra(DetectionActivity.EXTRA_CONFIDENCE, 0f) * 100);
 
         TextView title = findViewById(R.id.equipmentTitle);
+        TextView confidenceView = findViewById(R.id.equipmentConfidence);
         TextView function = findViewById(R.id.equipmentFunction);
         TextView components = findViewById(R.id.equipmentComponents);
         TextView usage = findViewById(R.id.equipmentUsage);
         TextView safety = findViewById(R.id.equipmentSafety);
 
         EquipmentInfo info = equipmentId != null ? new EquipmentRepository(this).get(equipmentId) : null;
+        confidenceView.setText(getString(R.string.confidence_badge, pct));
         if (info != null) {
             equipmentLabel = info.name;
-            title.setText(info.name + " (" + pct + "%)");
+            title.setText(info.name);
             function.setText(info.function);
             components.setText(join(info.components));
             usage.setText(info.usage);
             safety.setText(info.safety);
         } else {
-            title.setText((equipmentLabel != null ? equipmentLabel : equipmentId) + " (" + pct + "%)");
-            function.setText("No hay ficha local para esta clase. Consulte al asistente RAG o al responsable del laboratorio.");
+            title.setText(equipmentLabel != null ? equipmentLabel : equipmentId);
+            function.setText(R.string.ficha_missing);
             components.setText("-");
             usage.setText("-");
             safety.setText("-");

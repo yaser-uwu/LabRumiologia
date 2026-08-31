@@ -9,6 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.card.MaterialCardView;
 import com.uteq.software.labrumiologia.R;
 import com.uteq.software.labrumiologia.model.Detection;
 
@@ -39,8 +40,7 @@ public class DetectionAdapter extends RecyclerView.Adapter<DetectionAdapter.Hold
     @NonNull
     @Override
     public Holder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-        View v = LayoutInflater.from(parent.getContext()).inflate(R.layout.item_detection, parent, false);
-        return new Holder(v);
+        return new Holder(LayoutInflater.from(parent.getContext()).inflate(R.layout.item_detection, parent, false));
     }
 
     @Override
@@ -48,8 +48,9 @@ public class DetectionAdapter extends RecyclerView.Adapter<DetectionAdapter.Hold
         Detection d = items.get(position);
         holder.label.setText(d.label);
         holder.confidence.setText(String.format(Locale.getDefault(), "%.0f%%", d.confidence * 100f));
-        int bg = position == selected ? R.color.accent : R.color.chip_bg;
-        holder.itemView.setBackgroundColor(ContextCompat.getColor(holder.itemView.getContext(), bg));
+        boolean on = position == selected;
+        holder.card.setStrokeWidth(on ? 3 : 0);
+        holder.card.setStrokeColor(ContextCompat.getColor(holder.itemView.getContext(), R.color.accent));
         holder.itemView.setOnClickListener(v -> listener.onClick(d, holder.getBindingAdapterPosition()));
     }
 
@@ -59,11 +60,13 @@ public class DetectionAdapter extends RecyclerView.Adapter<DetectionAdapter.Hold
     }
 
     static class Holder extends RecyclerView.ViewHolder {
+        final MaterialCardView card;
         final TextView label;
         final TextView confidence;
 
         Holder(@NonNull View itemView) {
             super(itemView);
+            card = (MaterialCardView) itemView;
             label = itemView.findViewById(R.id.itemLabel);
             confidence = itemView.findViewById(R.id.itemConfidence);
         }

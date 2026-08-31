@@ -3,28 +3,25 @@ package com.uteq.software.labrumiologia;
 import android.os.Bundle;
 import android.widget.TextView;
 
-import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.textfield.TextInputEditText;
-import com.uteq.software.labrumiologia.network.ApiClient;
-import com.uteq.software.labrumiologia.network.ChatRequest;
-import com.uteq.software.labrumiologia.network.ChatResponse;
-import com.uteq.software.labrumiologia.network.ChatSource;
+import com.uteq.software.labrumiologia.data.LocalGuide;
 import com.uteq.software.labrumiologia.ui.ChatAdapter;
 
-import retrofit2.Call;
-import retrofit2.Callback;
-import retrofit2.Response;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatActivity extends AppCompatActivity {
     private String equipmentId;
     private ChatAdapter adapter;
     private TextInputEditText input;
     private MaterialButton btnSend;
+    private LocalGuide guide;
+    private final ExecutorService io = Executors.newSingleThreadExecutor();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -40,6 +37,7 @@ public class ChatActivity extends AppCompatActivity {
         messages.setLayoutManager(new LinearLayoutManager(this));
         adapter = new ChatAdapter();
         messages.setAdapter(adapter);
+        guide = new LocalGuide(this);
 
         input = findViewById(R.id.chatInput);
         btnSend = findViewById(R.id.btnSend);
@@ -56,41 +54,20 @@ public class ChatActivity extends AppCompatActivity {
         btnSend.setEnabled(false);
         adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_consulting), null, true));
 
-        ApiClient.chat(new ChatRequest(question, equipmentId), new Callback<ChatResponse>() {
-            @Override
-            public void onResponse(@NonNull Call<ChatResponse> call, @NonNull Response<ChatResponse> response) {
-                showReply(response.isSuccessful() && response.body() != null
-                        ? response.body()
-                        : null, "HTTP " + response.code());
-            }
-
-            @Override
-            public void onFailure(@NonNull Call<ChatResponse> call, @NonNull Throwable t) {
-                showReply(null, t.getMessage() != null ? t.getMessage() : "sin conexión");
-            }
+        io.execute(() -> {
+            LocalGuide.Reply reply = guide.ask(question, equipmentId);
+            runOnUiThread(() -> {
+                if (isDestroyed()) return;
+                btnSend.setEnabled(true);
+                adapter.removeLastIfPlaceholder();
+                adapter.add(new ChatAdapter.Message("Asistente", reply.answer, reply.sources));
+            });
         });
     }
 
-    private void showReply(ChatResponse body, String errorDetail) {
-        btnSend.setEnabled(true);
-        adapter.removeLastIfPlaceholder();
-        if (body == null) {
-            adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_error) + "\n" + errorDetail, null));
-            return;
-        }
-        adapter.add(new ChatAdapter.Message("Asistente", body.answer, formatSources(body)));
-    }
-
-    private String formatSources(ChatResponse body) {
-        if (body.sources == null || body.sources.isEmpty()) {
-            return getString(R.string.sources_label) + " (sin coincidencias documentales)";
-        }
-        StringBuilder sb = new StringBuilder(getString(R.string.sources_label)).append('\n');
-        for (ChatSource s : body.sources) {
-            sb.append("• ").append(s.title != null ? s.title : "documento");
-            if (s.page != null) sb.append(" (pág. ").append(s.page).append(')');
-            sb.append('\n');
-        }
-        return sb.toString().trim();
+    @Override
+    protected void onDestroy() {
+        io.shutdownNow();
+        super.onDestroy();
     }
 }

@@ -12,11 +12,10 @@ android {
         targetSdk = 37
         versionCode = 1
         versionName = "1.0"
-
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
-        val ragUrl = ragBaseUrl()
-        buildConfigField("String", "RAG_BASE_URL", "\"$ragUrl\"")
+        buildConfigField("String", "GEMINI_API_KEY", "\"${escapeJava(geminiValue("GEMINI_API_KEY", "gemini.api.key"))}\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"${escapeJava(geminiValue("LLM_MODEL", "gemini.model").ifEmpty { "gemini-3.1-flash-lite" })}\"")
     }
 
     buildTypes {
@@ -46,9 +45,6 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.tensorflow.lite)
-    implementation(libs.retrofit)
-    implementation(libs.retrofit.gson)
-    implementation(libs.okhttp.logging)
     implementation(libs.gson)
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
@@ -60,22 +56,42 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
 }
 
-fun ragBaseUrl(): String {
-    val fallback = "http://10.0.2.2:8000/"
-    val file = rootProject.file("local.properties")
-    if (!file.exists()) {
-        return fallback
+val syncLabDocs = tasks.register<Copy>("syncLabDocs") {
+    group = "lab"
+    description = "Copia las guías del laboratorio a assets (el chat las usa en el teléfono)"
+    from(rootProject.file("backend/data/docs")) {
+        include("**/*.md", "**/*.txt")
     }
-    var url = fallback
-    for (raw in file.readLines()) {
-        val line = raw.trim()
-        if (line.startsWith("rag.base.url=")) {
-            val value = line.substringAfter("=").trim().trim('"')
-            if (value.isNotEmpty()) {
-                url = if (value.endsWith("/")) value else "$value/"
-                break
+    into(file("src/main/assets/docs"))
+}
+
+afterEvaluate {
+    tasks.named("preBuild").configure { dependsOn(syncLabDocs) }
+}
+
+fun escapeJava(value: String): String =
+    value.replace("\\", "\\\\").replace("\"", "\\\"")
+
+fun geminiValue(envKey: String, localKey: String): String {
+    val envFile = rootProject.file("backend/.env")
+    if (envFile.exists()) {
+        for (raw in envFile.readLines()) {
+            val line = raw.trim()
+            if (line.startsWith("$envKey=")) {
+                val v = line.substringAfter("=").trim().trim('"')
+                if (v.isNotEmpty() && !v.startsWith("your_")) return v
             }
         }
     }
-    return url
+    val local = rootProject.file("local.properties")
+    if (local.exists()) {
+        for (raw in local.readLines()) {
+            val line = raw.trim()
+            if (line.startsWith("$localKey=")) {
+                val v = line.substringAfter("=").trim().trim('"')
+                if (v.isNotEmpty()) return v
+            }
+        }
+    }
+    return ""
 }

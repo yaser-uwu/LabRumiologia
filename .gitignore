@@ -35,5 +35,8 @@ backend/data/chroma/
 backend/data/equipment_knowledge.local.json
 backend/.venv/
 
+# Guías copiadas al APK en cada build (origen: backend/data/docs)
+app/src/main/assets/docs/
+
 # Large binaries (track intentionally if needed)
 # app/src/main/assets/model.tflite

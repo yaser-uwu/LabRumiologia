@@ -1,7 +1,7 @@
 path: C:\Users\Usuario\StudioProjects\LabRumiologia\ml\dataset
-train: images/train
-val: images/val
-test: images/test
+train: yolo_ls/images/train
+val: yolo_ls/images/val
+test: yolo_ls/images/test
 nc: 11
 names:
   0: ankom_daisy_ii

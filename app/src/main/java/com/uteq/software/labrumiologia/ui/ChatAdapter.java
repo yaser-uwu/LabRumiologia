@@ -58,6 +58,8 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> {
         Message m = items.get(position);
         holder.role.setText(m.role);
         holder.body.setText(m.body);
+        boolean user = "Usted".equals(m.role);
+        holder.card.setBackgroundResource(user ? R.drawable.bg_bubble_user : R.drawable.bg_bubble_assistant);
         if (m.sources != null && !m.sources.isEmpty()) {
             holder.sources.setVisibility(View.VISIBLE);
             holder.sources.setText(m.sources);
@@ -72,12 +74,14 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> {
     }
 
     static class Holder extends RecyclerView.ViewHolder {
+        final View card;
         final TextView role;
         final TextView body;
         final TextView sources;
 
         Holder(@NonNull View itemView) {
             super(itemView);
+            card = itemView;
             role = itemView.findViewById(R.id.messageRole);
             body = itemView.findViewById(R.id.messageBody);
             sources = itemView.findViewById(R.id.messageSources);

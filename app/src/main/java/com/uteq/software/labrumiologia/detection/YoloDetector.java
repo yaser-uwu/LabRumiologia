@@ -9,7 +9,9 @@ import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.RectF;
 
+import com.uteq.software.labrumiologia.data.EquipmentRepository;
 import com.uteq.software.labrumiologia.model.Detection;
+import com.uteq.software.labrumiologia.model.EquipmentInfo;
 
 import org.tensorflow.lite.Interpreter;
 
@@ -32,13 +34,15 @@ import java.util.Locale;
 public class YoloDetector implements AutoCloseable {
     public static final String MODEL_FILE = "model.tflite";
     public static final String LABELS_FILE = "labels.txt";
-    public static final float CONF_THRESHOLD = 0.60f;
+    public static final float CONF_THRESHOLD = 0.68f;
     public static final float IOU_THRESHOLD = 0.45f;
-    public static final float MIN_CLASS_MARGIN = 0.18f;
-    public static final int MAX_DETECTIONS = 2;
+    public static final float MIN_CLASS_MARGIN = 0.22f;
+    public static final int MAX_DETECTIONS = 1;
+    private static final float BOX_INSET = 0.08f;
 
     private final Interpreter interpreter;
     private final List<String> labels;
+    private final EquipmentRepository catalog;
     private final int numClasses;
     private final int inputSize;
     private final boolean nchw;
@@ -55,6 +59,7 @@ public class YoloDetector implements AutoCloseable {
     public YoloDetector(Context context) throws IOException {
         interpreter = new Interpreter(loadModelFile(context, MODEL_FILE));
         labels = loadLabels(context, LABELS_FILE);
+        catalog = new EquipmentRepository(context);
         numClasses = labels.size();
         int[] inShape = interpreter.getInputTensor(0).shape();
         // NHWC [1,H,W,3] or NCHW [1,3,H,W]
@@ -104,30 +109,73 @@ public class YoloDetector implements AutoCloseable {
 
     private List<Detection> postprocess(float[][] pred, int count, int nc, boolean transposed) {
         List<Detection> raw = new ArrayList<>();
+        float imgArea = Math.max(1, srcWidth) * (float) Math.max(1, srcHeight);
         for (int i = 0; i < count; i++) {
             if (!transposed && pred[i].length < 4 + nc) continue;
-            float best = 0f;
-            float second = 0f;
-            int bestClass = -1;
-            for (int c = 0; c < nc; c++) {
-                float s = transposed ? pred[4 + c][i] : pred[i][4 + c];
-                if (s > best) {
-                    second = best;
-                    best = s;
-                    bestClass = c;
-                } else if (s > second) {
-                    second = s;
-                }
-            }
-            if (bestClass < 0 || best < CONF_THRESHOLD || best - second < MIN_CLASS_MARGIN) continue;
             float cx = transposed ? pred[0][i] : pred[i][0];
             float cy = transposed ? pred[1][i] : pred[i][1];
             float w = transposed ? pred[2][i] : pred[i][2];
             float h = transposed ? pred[3][i] : pred[i][3];
+            float ar = w / Math.max(h, 1e-3f);
+            float bestAdj = -1f;
+            float secondAdj = -1f;
+            float bestRaw = 0f;
+            int bestClass = -1;
+            for (int c = 0; c < nc; c++) {
+                float rawScore = transposed ? pred[4 + c][i] : pred[i][4 + c];
+                float adj = rawScore + shapeBias(labels.get(c), ar);
+                if (adj > bestAdj) {
+                    secondAdj = bestAdj;
+                    bestAdj = adj;
+                    bestRaw = rawScore;
+                    bestClass = c;
+                } else if (adj > secondAdj) {
+                    secondAdj = adj;
+                }
+            }
+            if (bestClass < 0 || bestRaw < CONF_THRESHOLD || bestAdj - secondAdj < MIN_CLASS_MARGIN) continue;
+            RectF box = tighten(toSource(boxFromCenter(cx, cy, w, h)));
+            if (box.width() * box.height() < imgArea * 0.025f) continue;
             String id = labels.get(bestClass);
-            raw.add(new Detection(id, displayName(id), best, toSource(boxFromCenter(cx, cy, w, h))));
+            raw.add(new Detection(id, nameOf(id), bestRaw, box));
         }
         return nms(raw);
+    }
+
+    private RectF tighten(RectF box) {
+        float ix = box.width() * BOX_INSET;
+        float iy = box.height() * BOX_INSET;
+        return new RectF(
+                clamp(box.left + ix, 0, srcWidth),
+                clamp(box.top + iy, 0, srcHeight),
+                clamp(box.right - ix, 0, srcWidth),
+                clamp(box.bottom - iy, 0, srcHeight)
+        );
+    }
+
+    /** Compact meters vs selladora alargada: evita el falso AquaSearcher en equipos horizontales. */
+    private static float shapeBias(String id, float ar) {
+        switch (id) {
+            case "selladora_aie200":
+                return ar >= 2.0f ? 0.20f : (ar < 1.3f ? -0.22f : 0f);
+            case "aquasearcher":
+            case "ohaus_pr":
+            case "ohaus_pa214":
+                return ar >= 2.0f ? -0.30f : 0f;
+            case "shimadzu_gc2014":
+            case "estufa_secado":
+                return ar <= 0.85f ? 0.08f : (ar > 1.7f ? -0.12f : 0f);
+            case "desecador":
+            case "ankom_daisy_ii":
+                return (ar > 0.7f && ar < 1.45f) ? 0.06f : -0.08f;
+            default:
+                return 0f;
+        }
+    }
+
+    private String nameOf(String id) {
+        EquipmentInfo info = catalog.get(id);
+        return info != null && info.name != null ? info.name : displayName(id);
     }
 
     private RectF toSource(RectF box) {

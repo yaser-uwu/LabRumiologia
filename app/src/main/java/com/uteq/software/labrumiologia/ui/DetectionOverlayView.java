@@ -2,7 +2,6 @@ package com.uteq.software.labrumiologia.ui;
 
 import android.content.Context;
 import android.graphics.Canvas;
-import android.graphics.Color;
 import android.graphics.Paint;
 import android.graphics.RectF;
 import android.util.AttributeSet;
@@ -10,7 +9,9 @@ import android.view.MotionEvent;
 import android.view.View;
 
 import androidx.annotation.Nullable;
+import androidx.core.content.ContextCompat;
 
+import com.uteq.software.labrumiologia.R;
 import com.uteq.software.labrumiologia.model.Detection;
 
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ public class DetectionOverlayView extends View {
     private final Paint selectedPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
     private final Paint bgPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+    private final RectF labelRect = new RectF();
 
     private final List<Detection> detections = new ArrayList<>();
     private final List<RectF> viewBoxes = new ArrayList<>();
@@ -37,14 +39,15 @@ public class DetectionOverlayView extends View {
     public DetectionOverlayView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         boxPaint.setStyle(Paint.Style.STROKE);
-        boxPaint.setStrokeWidth(5f);
-        boxPaint.setColor(Color.parseColor("#EEFF41"));
+        boxPaint.setStrokeWidth(4f);
+        boxPaint.setColor(ContextCompat.getColor(context, R.color.box_stroke));
         selectedPaint.setStyle(Paint.Style.STROKE);
-        selectedPaint.setStrokeWidth(8f);
-        selectedPaint.setColor(Color.parseColor("#FF6F00"));
-        textPaint.setColor(Color.WHITE);
-        textPaint.setTextSize(36f);
-        bgPaint.setColor(Color.parseColor("#99000000"));
+        selectedPaint.setStrokeWidth(6f);
+        selectedPaint.setColor(ContextCompat.getColor(context, R.color.box_selected));
+        textPaint.setColor(ContextCompat.getColor(context, R.color.white));
+        textPaint.setTextSize(28f);
+        textPaint.setFakeBoldText(true);
+        bgPaint.setColor(ContextCompat.getColor(context, R.color.label_bg));
     }
 
     public void setOnDetectionTapListener(OnDetectionTapListener listener) {
@@ -74,13 +77,9 @@ public class DetectionOverlayView extends View {
         float viewW = getWidth();
         float viewH = getHeight();
         if (viewW <= 0 || viewH <= 0) return;
-
         float scale = Math.max(viewW / imageWidth, viewH / imageHeight);
-        float scaledW = imageWidth * scale;
-        float scaledH = imageHeight * scale;
-        float dx = (viewW - scaledW) / 2f;
-        float dy = (viewH - scaledH) / 2f;
-
+        float dx = (viewW - imageWidth * scale) / 2f;
+        float dy = (viewH - imageHeight * scale) / 2f;
         for (Detection d : detections) {
             RectF src = d.box;
             viewBoxes.add(new RectF(
@@ -101,29 +100,24 @@ public class DetectionOverlayView extends View {
     @Override
     protected void onDraw(Canvas canvas) {
         super.onDraw(canvas);
-        if (viewBoxes.size() != detections.size()) {
-            rebuildViewBoxes();
-        }
+        if (viewBoxes.size() != detections.size()) rebuildViewBoxes();
         for (int i = 0; i < detections.size(); i++) {
-            Detection d = detections.get(i);
             RectF box = viewBoxes.get(i);
-            Paint paint = (i == selectedIndex) ? selectedPaint : boxPaint;
-            canvas.drawRect(box, paint);
-            String label = String.format(Locale.getDefault(), "%s %.0f%%", d.label, d.confidence * 100f);
-            float textWidth = textPaint.measureText(label);
-            float top = Math.max(box.top - 44f, 0);
-            canvas.drawRect(box.left, top, box.left + textWidth + 16f, top + 44f, bgPaint);
-            canvas.drawText(label, box.left + 8f, top + 32f, textPaint);
+            canvas.drawRoundRect(box, 14f, 14f, i == selectedIndex ? selectedPaint : boxPaint);
+            String badge = String.format(Locale.getDefault(), "%.0f%%", detections.get(i).confidence * 100f);
+            float tw = textPaint.measureText(badge);
+            float top = Math.max(box.top - 36f, 8f);
+            labelRect.set(box.left, top, box.left + tw + 20f, top + 32f);
+            canvas.drawRoundRect(labelRect, 10f, 10f, bgPaint);
+            canvas.drawText(badge, box.left + 10f, top + 23f, textPaint);
         }
     }
 
     @Override
     public boolean onTouchEvent(MotionEvent event) {
         if (event.getAction() == MotionEvent.ACTION_DOWN && tapListener != null) {
-            float x = event.getX();
-            float y = event.getY();
             for (int i = 0; i < viewBoxes.size(); i++) {
-                if (viewBoxes.get(i).contains(x, y)) {
+                if (viewBoxes.get(i).contains(event.getX(), event.getY())) {
                     tapListener.onDetectionTapped(detections.get(i), i);
                     return true;
                 }

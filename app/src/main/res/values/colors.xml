@@ -1,12 +1,17 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
+    <color name="black">#FF111827</color>
     <color name="white">#FFFFFFFF</color>
-    <color name="primary">#1B5E20</color>
-    <color name="primary_dark">#0D3B12</color>
-    <color name="accent">#F9A825</color>
-    <color name="overlay_bg">#CC0D3B12</color>
-    <color name="box_stroke">#FFEEFF41</color>
-    <color name="box_selected">#FFFF6F00</color>
-    <color name="chip_bg">#E8F5E9</color>
+    <color name="primary">#0F5C4C</color>
+    <color name="primary_dark">#0A2F28</color>
+    <color name="primary_soft">#E6F3EF</color>
+    <color name="accent">#1F9A76</color>
+    <color name="surface">#F3F6F5</color>
+    <color name="on_surface">#12241F</color>
+    <color name="on_surface_muted">#5B6F69</color>
+    <color name="overlay_bg">#F20A2F28</color>
+    <color name="box_stroke">#B8F5DE</color>
+    <color name="box_selected">#2EE6A6</color>
+    <color name="chip_bg">#FFFFFFFF</color>
+    <color name="label_bg">#CC0A2F28</color>
 </resources>

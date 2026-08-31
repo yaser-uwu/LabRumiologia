@@ -5,6 +5,7 @@ import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -44,6 +45,7 @@ public class DetectionActivity extends AppCompatActivity {
     private TextView statusText;
     private MaterialButton btnInfo;
     private DetectionAdapter adapter;
+    private RecyclerView detectionsList;
 
     private YoloDetector detector;
     private ExecutorService analysisExecutor;
@@ -64,10 +66,11 @@ public class DetectionActivity extends AppCompatActivity {
         overlayView = findViewById(R.id.overlayView);
         statusText = findViewById(R.id.statusText);
         btnInfo = findViewById(R.id.btnInfo);
-        RecyclerView list = findViewById(R.id.detectionsList);
-        list.setLayoutManager(new LinearLayoutManager(this, LinearLayoutManager.HORIZONTAL, false));
+        detectionsList = findViewById(R.id.detectionsList);
+        detectionsList.setLayoutManager(new LinearLayoutManager(this));
         adapter = new DetectionAdapter(this::selectDetection);
-        list.setAdapter(adapter);
+        detectionsList.setAdapter(adapter);
+        detectionsList.setVisibility(View.GONE);
 
         overlayView.setOnDetectionTapListener(this::selectDetection);
         btnInfo.setOnClickListener(v -> openDetail());
@@ -95,7 +98,7 @@ public class DetectionActivity extends AppCompatActivity {
         overlayView.setSelectedIndex(index);
         adapter.submit(new ArrayList<>(latestDetections), selectedIndex);
         btnInfo.setEnabled(true);
-        statusText.setText(detection.label + " · " + Math.round(detection.confidence * 100) + "%");
+        statusText.setText(R.string.detection_ready);
     }
 
     private void openDetail() {
@@ -182,12 +185,8 @@ public class DetectionActivity extends AppCompatActivity {
         overlayView.setImageSize(srcW, srcH);
         overlayView.setDetections(latestDetections, selectedIndex);
         adapter.submit(latestDetections, selectedIndex);
-        if (latestDetections.isEmpty()) {
-            statusText.setText(R.string.no_detections);
-        } else if (selectedIndex >= 0) {
-            Detection d = latestDetections.get(selectedIndex);
-            statusText.setText(d.label + " · " + Math.round(d.confidence * 100) + "%");
-        }
+        detectionsList.setVisibility(latestDetections.isEmpty() ? View.GONE : View.VISIBLE);
+        statusText.setText(latestDetections.isEmpty() ? R.string.detecting : R.string.detection_ready);
     }
 
     @Override
