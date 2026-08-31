@@ -1,8 +1,5 @@
-# Coloque aquí el modelo exportado tras el entrenamiento:
-#   ml/models/model.tflite  ->  copiar a este directorio como model.tflite
+# Modelo TFLite para la app (YOLO11n, 11 equipos del lab, imgsz 512).
+# Regenerar desde la raíz del repo:
+#   python ml/scripts/export_tflite.py --weights ml/models/best.pt --imgsz 512
 #
-# Comando sugerido (desde la raíz del repo):
-#   python ml/scripts/train_yolo.py --data ml/dataset/data.yaml --epochs 50
-#   python ml/scripts/export_tflite.py --weights ml/models/best.pt
-#
-# Hasta entonces la app muestra un aviso y no ejecuta inferencia.
+# Tras copiar model.tflite hay que reinstalar la app (Run en Android Studio).

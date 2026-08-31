@@ -18,11 +18,17 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> {
         public final String role;
         public final String body;
         public final String sources;
+        public final boolean placeholder;
 
         public Message(String role, String body, String sources) {
+            this(role, body, sources, false);
+        }
+
+        public Message(String role, String body, String sources, boolean placeholder) {
             this.role = role;
             this.body = body;
             this.sources = sources;
+            this.placeholder = placeholder;
         }
     }
 
@@ -31,6 +37,13 @@ public class ChatAdapter extends RecyclerView.Adapter<ChatAdapter.Holder> {
     public void add(Message message) {
         items.add(message);
         notifyItemInserted(items.size() - 1);
+    }
+
+    public void removeLastIfPlaceholder() {
+        if (items.isEmpty() || !items.get(items.size() - 1).placeholder) return;
+        int idx = items.size() - 1;
+        items.remove(idx);
+        notifyItemRemoved(idx);
     }
 
     @NonNull

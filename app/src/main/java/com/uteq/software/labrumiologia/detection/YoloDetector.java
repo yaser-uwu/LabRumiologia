@@ -27,18 +27,21 @@ import java.util.List;
 import java.util.Locale;
 
 /**
- * YOLOv8 TFLite detector (Ultralytics export: output [1, 4+nc, num_anchors]).
+ * YOLOv8/YOLO11/YOLO26 TFLite detector (Ultralytics export: output [1, 4+nc, num_anchors]).
  */
 public class YoloDetector implements AutoCloseable {
     public static final String MODEL_FILE = "model.tflite";
     public static final String LABELS_FILE = "labels.txt";
-    public static final float CONF_THRESHOLD = 0.45f;
+    public static final float CONF_THRESHOLD = 0.60f;
     public static final float IOU_THRESHOLD = 0.45f;
+    public static final float MIN_CLASS_MARGIN = 0.18f;
+    public static final int MAX_DETECTIONS = 2;
 
     private final Interpreter interpreter;
     private final List<String> labels;
     private final int numClasses;
     private final int inputSize;
+    private final boolean nchw;
     private final ByteBuffer inputBuffer;
     private final int[] intValues;
     private final Paint letterboxPaint = new Paint(Paint.FILTER_BITMAP_FLAG);
@@ -56,10 +59,13 @@ public class YoloDetector implements AutoCloseable {
         int[] inShape = interpreter.getInputTensor(0).shape();
         // NHWC [1,H,W,3] or NCHW [1,3,H,W]
         if (inShape.length == 4 && inShape[1] == 3) {
+            nchw = true;
             inputSize = inShape[2];
         } else if (inShape.length == 4) {
+            nchw = false;
             inputSize = inShape[1];
         } else {
+            nchw = false;
             inputSize = 640;
         }
         intValues = new int[inputSize * inputSize];
@@ -71,63 +77,21 @@ public class YoloDetector implements AutoCloseable {
         return interpreter != null && !labels.isEmpty();
     }
 
-    public List<String> getLabels() {
-        return labels;
-    }
-
     public synchronized List<Detection> detect(Bitmap bitmap) {
         srcWidth = bitmap.getWidth();
         srcHeight = bitmap.getHeight();
         Bitmap letterboxed = letterbox(bitmap);
         fillInput(letterboxed);
-        if (letterboxed != bitmap) {
-            letterboxed.recycle();
-        }
+        if (letterboxed != bitmap) letterboxed.recycle();
 
         int[] shape = interpreter.getOutputTensor(0).shape();
-        // Ultralytics: [1, 4+nc, N] or [1, N, 4+nc]
-        float[][][] output;
-        if (shape.length == 3 && shape[1] == 4 + numClasses) {
-            output = new float[1][shape[1]][shape[2]];
-            interpreter.run(inputBuffer, output);
-            return postprocessTransposed(output[0], shape[2]);
-        } else if (shape.length == 3 && shape[2] == 4 + numClasses) {
-            output = new float[1][shape[1]][shape[2]];
-            interpreter.run(inputBuffer, output);
-            return postprocessRows(output[0], shape[1]);
-        } else {
-            // Fallback: try [1, 4+nc, N]
-            int channels = 4 + numClasses;
-            int anchors = shape.length >= 3 ? shape[shape.length - 1] : 8400;
-            if (shape.length == 3 && shape[1] != channels) {
-                anchors = shape[1];
-                channels = shape[2];
-            }
-            float[][][] out = new float[1][Math.min(channels, shape[1])][anchors];
-            try {
-                interpreter.run(inputBuffer, out);
-                if (out[0].length == 4 + numClasses) {
-                    return postprocessTransposed(out[0], anchors);
-                }
-                return postprocessRows(out[0], out[0].length);
-            } catch (Exception e) {
-                return Collections.emptyList();
-            }
-        }
-    }
-
-    /** Map model letterbox coords to original bitmap coords. */
-    public RectF mapToSource(RectF modelBox) {
-        float left = (modelBox.left - padX) / scale;
-        float top = (modelBox.top - padY) / scale;
-        float right = (modelBox.right - padX) / scale;
-        float bottom = (modelBox.bottom - padY) / scale;
-        return new RectF(
-                clamp(left, 0, srcWidth),
-                clamp(top, 0, srcHeight),
-                clamp(right, 0, srcWidth),
-                clamp(bottom, 0, srcHeight)
-        );
+        int dim1 = shape.length >= 3 ? shape[1] : 0;
+        int dim2 = shape.length >= 3 ? shape[2] : 0;
+        boolean transposed = dim1 > 0 && dim1 < dim2;
+        int nc = Math.min(numClasses, Math.max(1, (transposed ? dim1 : dim2) - 4));
+        float[][][] output = new float[1][dim1][dim2];
+        interpreter.run(inputBuffer, output);
+        return postprocess(output[0], transposed ? dim2 : dim1, nc, transposed);
     }
 
     public int getSourceWidth() {
@@ -138,52 +102,52 @@ public class YoloDetector implements AutoCloseable {
         return srcHeight;
     }
 
-    private List<Detection> postprocessTransposed(float[][] pred, int numAnchors) {
-        // pred[0..3][i] = cx,cy,w,h ; pred[4..4+nc)[i] = class scores
+    private List<Detection> postprocess(float[][] pred, int count, int nc, boolean transposed) {
         List<Detection> raw = new ArrayList<>();
-        for (int i = 0; i < numAnchors; i++) {
-            float bestScore = 0f;
+        for (int i = 0; i < count; i++) {
+            if (!transposed && pred[i].length < 4 + nc) continue;
+            float best = 0f;
+            float second = 0f;
             int bestClass = -1;
-            for (int c = 0; c < numClasses; c++) {
-                float score = pred[4 + c][i];
-                if (score > bestScore) {
-                    bestScore = score;
+            for (int c = 0; c < nc; c++) {
+                float s = transposed ? pred[4 + c][i] : pred[i][4 + c];
+                if (s > best) {
+                    second = best;
+                    best = s;
                     bestClass = c;
+                } else if (s > second) {
+                    second = s;
                 }
             }
-            if (bestScore < CONF_THRESHOLD || bestClass < 0) continue;
-            float cx = pred[0][i];
-            float cy = pred[1][i];
-            float w = pred[2][i];
-            float h = pred[3][i];
-            RectF box = new RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f);
-            String classId = labels.get(bestClass);
-            raw.add(new Detection(classId, displayName(classId), bestScore, mapToSource(box)));
+            if (bestClass < 0 || best < CONF_THRESHOLD || best - second < MIN_CLASS_MARGIN) continue;
+            float cx = transposed ? pred[0][i] : pred[i][0];
+            float cy = transposed ? pred[1][i] : pred[i][1];
+            float w = transposed ? pred[2][i] : pred[i][2];
+            float h = transposed ? pred[3][i] : pred[i][3];
+            String id = labels.get(bestClass);
+            raw.add(new Detection(id, displayName(id), best, toSource(boxFromCenter(cx, cy, w, h))));
         }
         return nms(raw);
     }
 
-    private List<Detection> postprocessRows(float[][] pred, int numRows) {
-        List<Detection> raw = new ArrayList<>();
-        for (int i = 0; i < numRows; i++) {
-            float[] row = pred[i];
-            if (row.length < 4 + numClasses) continue;
-            float bestScore = 0f;
-            int bestClass = -1;
-            for (int c = 0; c < numClasses; c++) {
-                float score = row[4 + c];
-                if (score > bestScore) {
-                    bestScore = score;
-                    bestClass = c;
-                }
-            }
-            if (bestScore < CONF_THRESHOLD || bestClass < 0) continue;
-            float cx = row[0], cy = row[1], w = row[2], h = row[3];
-            RectF box = new RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f);
-            String classId = labels.get(bestClass);
-            raw.add(new Detection(classId, displayName(classId), bestScore, mapToSource(box)));
+    private RectF toSource(RectF box) {
+        return new RectF(
+                clamp((box.left - padX) / scale, 0, srcWidth),
+                clamp((box.top - padY) / scale, 0, srcHeight),
+                clamp((box.right - padX) / scale, 0, srcWidth),
+                clamp((box.bottom - padY) / scale, 0, srcHeight)
+        );
+    }
+
+    /** Ultralytics may export boxes in pixels (0..imgsz) or normalized (0..1). */
+    private RectF boxFromCenter(float cx, float cy, float w, float h) {
+        if (cx <= 1.5f && cy <= 1.5f && w <= 2f && h <= 2f) {
+            cx *= inputSize;
+            cy *= inputSize;
+            w *= inputSize;
+            h *= inputSize;
         }
-        return nms(raw);
+        return new RectF(cx - w / 2f, cy - h / 2f, cx + w / 2f, cy + h / 2f);
     }
 
     private List<Detection> nms(List<Detection> detections) {
@@ -194,10 +158,11 @@ public class YoloDetector implements AutoCloseable {
             if (removed[i]) continue;
             Detection a = detections.get(i);
             result.add(a);
+            if (result.size() >= MAX_DETECTIONS) break;
             for (int j = i + 1; j < detections.size(); j++) {
                 if (removed[j]) continue;
                 Detection b = detections.get(j);
-                if (a.classId.equals(b.classId) && iou(a.box, b.box) > IOU_THRESHOLD) {
+                if (iou(a.box, b.box) > IOU_THRESHOLD) {
                     removed[j] = true;
                 }
             }
@@ -234,14 +199,19 @@ public class YoloDetector implements AutoCloseable {
     private void fillInput(Bitmap bitmap) {
         inputBuffer.rewind();
         bitmap.getPixels(intValues, 0, inputSize, 0, 0, inputSize, inputSize);
-        int idx = 0;
-        for (int y = 0; y < inputSize; y++) {
-            for (int x = 0; x < inputSize; x++) {
-                int pixel = intValues[idx++];
-                inputBuffer.putFloat(((pixel >> 16) & 0xFF) / 255f);
-                inputBuffer.putFloat(((pixel >> 8) & 0xFF) / 255f);
-                inputBuffer.putFloat((pixel & 0xFF) / 255f);
+        if (nchw) {
+            for (int c = 0; c < 3; c++) {
+                int shift = 16 - 8 * c;
+                for (int i = 0; i < intValues.length; i++) {
+                    inputBuffer.putFloat(((intValues[i] >> shift) & 0xFF) / 255f);
+                }
             }
+            return;
+        }
+        for (int pixel : intValues) {
+            inputBuffer.putFloat(((pixel >> 16) & 0xFF) / 255f);
+            inputBuffer.putFloat(((pixel >> 8) & 0xFF) / 255f);
+            inputBuffer.putFloat((pixel & 0xFF) / 255f);
         }
     }
 

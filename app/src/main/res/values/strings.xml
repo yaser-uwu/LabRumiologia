@@ -1,7 +1,7 @@
 <resources>
     <string name="app_name">Lab Rumiología</string>
     <string name="detecting">Apunte la cámara a un equipo del laboratorio</string>
-    <string name="no_detections">Sin detecciones</string>
+    <string name="no_detections">Sin equipo del laboratorio (apunte de cerca; ignore PCs y mesas)</string>
     <string name="info_tecnica">Información técnica</string>
     <string name="ask_assistant">Consultar asistente</string>
     <string name="chat_hint">Pregunte sobre uso, seguridad o mantenimiento…</string>
@@ -12,4 +12,7 @@
     <string name="camera_permission_required">Se necesita permiso de cámara</string>
     <string name="model_missing">Coloque model.tflite en assets tras entrenar el modelo</string>
     <string name="chat_error">No se pudo contactar al asistente. Verifique el backend RAG.</string>
+    <string name="chat_title">Asistente · %1$s</string>
+    <string name="chat_intro">Pregunte sobre función, operación, seguridad o mantenimiento. Las respuestas salen de las guías de este equipo.</string>
+    <string name="chat_consulting">Consultando las guías…</string>
 </resources>

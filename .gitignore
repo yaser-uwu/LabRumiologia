@@ -28,8 +28,11 @@ ml/dataset/images/**/*
 ml/dataset/labels/**/*
 !ml/dataset/labels/**/.gitkeep
 *.pt
+*.onnx
+ml/models/onnx2tf_out/
 backend/.env
 backend/data/chroma/
+backend/data/equipment_knowledge.local.json
 backend/.venv/
 
 # Large binaries (track intentionally if needed)

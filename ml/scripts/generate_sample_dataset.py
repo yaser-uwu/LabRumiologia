@@ -1,6 +1,7 @@
 """
-Genera un dataset sintético YOLO (para probar el pipeline).
-Reemplazar por fotos reales del laboratorio antes de la entrega.
+Genera un dataset sintético YOLO (solo para probar el pipeline).
+Para la entrega: fotos reales del laboratorio etiquetadas en Label Studio
+(https://labelstud.io/) e importadas con ml/scripts/import_labelstudio.py.
 """
 from __future__ import annotations
 

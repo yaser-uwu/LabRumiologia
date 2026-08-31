@@ -62,9 +62,6 @@ async def call_tool(name: str, arguments: dict):
 
 
 async def main():
-    rag = get_rag()
-    if rag._collection.count() == 0:
-        rag.ingest()
     async with stdio_server() as (read_stream, write_stream):
         await server.run(read_stream, write_stream, server.create_initialization_options())
 

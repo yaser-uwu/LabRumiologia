@@ -1,7 +1,7 @@
 package com.uteq.software.labrumiologia;
 
 import android.os.Bundle;
-import android.widget.Toast;
+import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -22,7 +22,6 @@ import retrofit2.Response;
 
 public class ChatActivity extends AppCompatActivity {
     private String equipmentId;
-    private String equipmentLabel;
     private ChatAdapter adapter;
     private TextInputEditText input;
     private MaterialButton btnSend;
@@ -33,11 +32,9 @@ public class ChatActivity extends AppCompatActivity {
         setContentView(R.layout.activity_chat);
 
         equipmentId = getIntent().getStringExtra(DetectionActivity.EXTRA_EQUIPMENT_ID);
-        equipmentLabel = getIntent().getStringExtra(DetectionActivity.EXTRA_EQUIPMENT_LABEL);
-
-        findViewById(R.id.chatEquipmentLabel);
-        ((android.widget.TextView) findViewById(R.id.chatEquipmentLabel))
-                .setText("Asistente · " + (equipmentLabel != null ? equipmentLabel : equipmentId));
+        String label = getIntent().getStringExtra(DetectionActivity.EXTRA_EQUIPMENT_LABEL);
+        ((TextView) findViewById(R.id.chatEquipmentLabel))
+                .setText(getString(R.string.chat_title, label != null ? label : equipmentId));
 
         RecyclerView messages = findViewById(R.id.chatMessages);
         messages.setLayoutManager(new LinearLayoutManager(this));
@@ -47,12 +44,7 @@ public class ChatActivity extends AppCompatActivity {
         input = findViewById(R.id.chatInput);
         btnSend = findViewById(R.id.btnSend);
         btnSend.setOnClickListener(v -> sendMessage());
-
-        adapter.add(new ChatAdapter.Message(
-                "Sistema",
-                "Pregunte sobre función, operación, seguridad, mantenimiento o uso académico. Las respuestas se basan solo en documentos del laboratorio.",
-                null
-        ));
+        adapter.add(new ChatAdapter.Message("Sistema", getString(R.string.chat_intro), null));
     }
 
     private void sendMessage() {
@@ -62,35 +54,38 @@ public class ChatActivity extends AppCompatActivity {
         adapter.add(new ChatAdapter.Message("Usted", question, null));
         input.setText("");
         btnSend.setEnabled(false);
+        adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_consulting), null, true));
 
-        ApiClient.get().chat(new ChatRequest(question, equipmentId)).enqueue(new Callback<ChatResponse>() {
+        ApiClient.chat(new ChatRequest(question, equipmentId), new Callback<ChatResponse>() {
             @Override
             public void onResponse(@NonNull Call<ChatResponse> call, @NonNull Response<ChatResponse> response) {
-                btnSend.setEnabled(true);
-                if (!response.isSuccessful() || response.body() == null) {
-                    adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_error), null));
-                    return;
-                }
-                ChatResponse body = response.body();
-                String sources = formatSources(body);
-                adapter.add(new ChatAdapter.Message("Asistente", body.answer, sources));
+                showReply(response.isSuccessful() && response.body() != null
+                        ? response.body()
+                        : null, "HTTP " + response.code());
             }
 
             @Override
             public void onFailure(@NonNull Call<ChatResponse> call, @NonNull Throwable t) {
-                btnSend.setEnabled(true);
-                adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_error), null));
-                Toast.makeText(ChatActivity.this, t.getMessage(), Toast.LENGTH_SHORT).show();
+                showReply(null, t.getMessage() != null ? t.getMessage() : "sin conexión");
             }
         });
+    }
+
+    private void showReply(ChatResponse body, String errorDetail) {
+        btnSend.setEnabled(true);
+        adapter.removeLastIfPlaceholder();
+        if (body == null) {
+            adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_error) + "\n" + errorDetail, null));
+            return;
+        }
+        adapter.add(new ChatAdapter.Message("Asistente", body.answer, formatSources(body)));
     }
 
     private String formatSources(ChatResponse body) {
         if (body.sources == null || body.sources.isEmpty()) {
             return getString(R.string.sources_label) + " (sin coincidencias documentales)";
         }
-        StringBuilder sb = new StringBuilder(getString(R.string.sources_label));
-        sb.append('\n');
+        StringBuilder sb = new StringBuilder(getString(R.string.sources_label)).append('\n');
         for (ChatSource s : body.sources) {
             sb.append("• ").append(s.title != null ? s.title : "documento");
             if (s.page != null) sb.append(" (pág. ").append(s.page).append(')');

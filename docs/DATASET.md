@@ -5,7 +5,10 @@
 Antes de fotografiar, solicite autorización al responsable del Laboratorio de Rumiología.
 Conserve evidencias (correo o constancia) en `docs/evidencias/`.
 
-## Clases (8 equipos)
+## Clases (equipos)
+
+La **clase YOLO es el equipo**. Debe coincidir con el `value` en Label Studio y con
+la carpeta de manuales en `backend/data/docs/<clase>/`.
 
 | id YOLO | Nombre |
 |---------|--------|
@@ -18,7 +21,27 @@ Conserve evidencias (correo o constancia) en `docs/evidencias/`.
 | banio_maria | Baño María |
 | microscopio | Microscopio |
 
-Ajuste esta lista si su captura real usa otros equipos (6–10 clases).
+Ajuste esta lista si su captura real usa otros equipos (6–10 clases), por ejemplo
+modelos comerciales (`ohaus_pr224`). En ese caso añada la clase en Label Studio,
+`data.yaml` y `backend/data/equipment_knowledge.json`.
+
+## Label Studio
+
+YOLO necesita, por cada foto, un `.txt` con la **ubicación del recuadro** y el **id de clase**.
+
+1. Instale Label Studio: https://labelstud.io/ (`pip install label-studio` y `label-studio`).
+2. Nuevo proyecto → plantilla *Object Detection with Bounding Boxes*.
+3. Pegue `ml/labelstudio/config.xml` en *Labeling Interface*.
+4. Importe las fotos del laboratorio.
+5. Etiquete: un recuadro por equipo visible; elija la clase correcta.
+6. *Export* → formato **YOLO** (ZIP con `images/`, `labels/`, `classes.txt`).
+7. Importe al repo:
+
+```bash
+python ml/scripts/import_labelstudio.py --src export-labelstudio.zip --split
+```
+
+Cada línea de `labels/*.txt` tiene el formato YOLO: `class_id cx cy width height` (valores 0–1).
 
 ## Captura
 
@@ -41,9 +64,6 @@ ml/dataset/
   data.yaml
 ```
 
-Formato de anotación: **YOLO** (`class cx cy w h` normalizado).
-Herramientas: Label Studio, CVAT, Roboflow o LabelImg.
-
 ## Split
 
 - 70 % train
@@ -52,12 +72,7 @@ Herramientas: Label Studio, CVAT, Roboflow o LabelImg.
 
 Estratificar por clase. No mezclar la misma foto (o recortes casi idénticos) en varios splits.
 
-## Cómo organizar fotos existentes
-
-1. Copie sus imágenes a `ml/dataset/raw/<clase>/`.
-2. Etiquete y exporte a formato YOLO.
-3. Ejecute `python ml/scripts/split_dataset.py` para generar train/val/test.
-4. Verifique `data.yaml`.
+`--split` en el importador llama a `ml/scripts/split_dataset.py`.
 
 ## Conteos
 
@@ -65,13 +80,13 @@ Complete la tabla tras etiquetar:
 
 | Clase | Total | Train | Val | Test |
 |-------|-------|-------|-----|------|
-| incubadora | 20 | 14 | 3 | 3 |
-| agitador_orbital | 20 | 14 | 3 | 3 |
-| balanza_analitica | 20 | 14 | 3 | 3 |
-| phmetro | 20 | 14 | 3 | 3 |
-| centrifugadora | 20 | 14 | 3 | 3 |
-| estufa_secado | 20 | 14 | 3 | 3 |
-| banio_maria | 20 | 14 | 3 | 3 |
-| microscopio | 20 | 14 | 3 | 3 |
+| incubadora | | | | |
+| agitador_orbital | | | | |
+| balanza_analitica | | | | |
+| phmetro | | | | |
+| centrifugadora | | | | |
+| estufa_secado | | | | |
+| banio_maria | | | | |
+| microscopio | | | | |
 
-> **Nota:** conteos sintéticos de prueba. Reemplace con sus fotos reales del laboratorio.
+> El dataset sintético de prueba (`generate_sample_dataset.py`) solo sirve para validar el pipeline. Reemplácelo con fotos reales etiquetadas en Label Studio.

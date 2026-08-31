@@ -1,14 +1,17 @@
-path: C:\Users\Dispositivo\AndroidStudioProjects\deteccionderostro\ml\dataset
+path: C:\Users\Usuario\StudioProjects\LabRumiologia\ml\dataset
 train: images/train
 val: images/val
 test: images/test
-nc: 8
+nc: 11
 names:
-  0: incubadora
-  1: agitador_orbital
-  2: balanza_analitica
-  3: phmetro
-  4: centrifugadora
-  5: estufa_secado
-  6: banio_maria
-  7: microscopio
+  0: ankom_daisy_ii
+  1: aquasearcher
+  2: ohaus_pr
+  3: contador_colonias
+  4: ohaus_pa214
+  5: banio_maria_memmert
+  6: ankom_a200
+  7: shimadzu_gc2014
+  8: estufa_secado
+  9: selladora_aie200
+  10: desecador

@@ -6,7 +6,6 @@ import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
 
-import com.google.android.material.button.MaterialButton;
 import com.uteq.software.labrumiologia.data.EquipmentRepository;
 import com.uteq.software.labrumiologia.model.EquipmentInfo;
 
@@ -23,34 +22,31 @@ public class EquipmentDetailActivity extends AppCompatActivity {
 
         equipmentId = getIntent().getStringExtra(DetectionActivity.EXTRA_EQUIPMENT_ID);
         equipmentLabel = getIntent().getStringExtra(DetectionActivity.EXTRA_EQUIPMENT_LABEL);
-        float confidence = getIntent().getFloatExtra(DetectionActivity.EXTRA_CONFIDENCE, 0f);
+        int pct = Math.round(getIntent().getFloatExtra(DetectionActivity.EXTRA_CONFIDENCE, 0f) * 100);
 
         TextView title = findViewById(R.id.equipmentTitle);
         TextView function = findViewById(R.id.equipmentFunction);
         TextView components = findViewById(R.id.equipmentComponents);
         TextView usage = findViewById(R.id.equipmentUsage);
         TextView safety = findViewById(R.id.equipmentSafety);
-        MaterialButton btnChat = findViewById(R.id.btnChat);
 
-        EquipmentRepository repo = new EquipmentRepository(this);
-        EquipmentInfo info = equipmentId != null ? repo.get(equipmentId) : null;
-
+        EquipmentInfo info = equipmentId != null ? new EquipmentRepository(this).get(equipmentId) : null;
         if (info != null) {
             equipmentLabel = info.name;
-            title.setText(info.name + " (" + Math.round(confidence * 100) + "%)");
+            title.setText(info.name + " (" + pct + "%)");
             function.setText(info.function);
             components.setText(join(info.components));
             usage.setText(info.usage);
             safety.setText(info.safety);
         } else {
-            title.setText((equipmentLabel != null ? equipmentLabel : equipmentId) + " (" + Math.round(confidence * 100) + "%)");
+            title.setText((equipmentLabel != null ? equipmentLabel : equipmentId) + " (" + pct + "%)");
             function.setText("No hay ficha local para esta clase. Consulte al asistente RAG o al responsable del laboratorio.");
             components.setText("-");
             usage.setText("-");
             safety.setText("-");
         }
 
-        btnChat.setOnClickListener(v -> {
+        findViewById(R.id.btnChat).setOnClickListener(v -> {
             Intent i = new Intent(this, ChatActivity.class);
             i.putExtra(DetectionActivity.EXTRA_EQUIPMENT_ID, equipmentId);
             i.putExtra(DetectionActivity.EXTRA_EQUIPMENT_LABEL, equipmentLabel);

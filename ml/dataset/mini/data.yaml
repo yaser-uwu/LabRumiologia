@@ -1,4 +1,4 @@
-path: C:\Users\Dispositivo\AndroidStudioProjects\deteccionderostro\ml\dataset\mini
+path: .
 train: images/train
 val: images/val
 nc: 8

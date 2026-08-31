@@ -36,7 +36,7 @@ def convert_onnx_to_tflite(onnx_path: Path, imgsz: int) -> Path:
 
             out_dir = onnx_path.parent / "onnx2tf_out"
             subprocess.check_call(
-                [sys.executable, "-m", "onnx2tf", "-i", str(onnx_path), "-o", str(out_dir), "-ot", "tflite"]
+                [sys.executable, "-m", "onnx2tf", "-i", str(onnx_path), "-o", str(out_dir)]
             )
             candidates = list(out_dir.rglob("*.tflite"))
             if not candidates:
@@ -67,7 +67,7 @@ def convert_onnx_to_tflite(onnx_path: Path, imgsz: int) -> Path:
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--weights", type=Path, default=Path("ml/models/best.pt"))
-    parser.add_argument("--imgsz", type=int, default=640)
+    parser.add_argument("--imgsz", type=int, default=512)
     parser.add_argument("--labels", type=Path, default=Path("ml/dataset/data.yaml"))
     parser.add_argument("--assets", type=Path, default=Path("app/src/main/assets"))
     args = parser.parse_args()
