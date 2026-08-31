@@ -1,0 +1,90 @@
+{
+  "fuente_fotos": "C:\\Users\\Usuario\\OneDrive\\Desktop\\Modelos lab",
+  "nota": "Identificación visual a partir de las fotos. MAQUINA 2 y 3 son el mismo equipo (OHAUS AquaSearcher) fotografiado de cerca y de lejos.",
+  "equipos": [
+    {
+      "carpeta_origen": "MAQUINA 1",
+      "fotos": 27,
+      "clase_yolo": "ankom_daisy_ii",
+      "nombre": "Incubadora ANKOM Daisy II",
+      "tipo": "Incubadora de digestión in vitro"
+    },
+    {
+      "carpeta_origen": "MAQUINA 2",
+      "fotos": 6,
+      "clase_yolo": "aquasearcher",
+      "nombre": "OHAUS AquaSearcher (electrodo y brazo)",
+      "tipo": "Medidor de pH / multiparámetro"
+    },
+    {
+      "carpeta_origen": "MAQUINA 3",
+      "fotos": 4,
+      "clase_yolo": "aquasearcher",
+      "nombre": "OHAUS AquaSearcher (consola)",
+      "tipo": "Medidor de pH / multiparámetro"
+    },
+    {
+      "carpeta_origen": "MAQUINA 4",
+      "fotos": 11,
+      "clase_yolo": "ohaus_pr",
+      "nombre": "Balanza analítica OHAUS PR Series",
+      "tipo": "Balanza analítica"
+    },
+    {
+      "carpeta_origen": "MAQUINA 5",
+      "fotos": 14,
+      "clase_yolo": "contador_colonias",
+      "nombre": "Contador de colonias POL-EKO LKB 2002",
+      "tipo": "Contador de colonias"
+    },
+    {
+      "carpeta_origen": "MAQUINA 6",
+      "fotos": 8,
+      "clase_yolo": "ohaus_pa214",
+      "nombre": "Balanza analítica OHAUS Pioneer PA214",
+      "tipo": "Balanza analítica"
+    },
+    {
+      "carpeta_origen": "MAQUINA 7",
+      "fotos": 41,
+      "clase_yolo": "banio_maria_memmert",
+      "nombre": "Baño María Memmert (serie WNB/WNE)",
+      "tipo": "Baño de agua"
+    },
+    {
+      "carpeta_origen": "MAQUINA 8",
+      "fotos": 56,
+      "clase_yolo": "ankom_a200",
+      "nombre": "ANKOM 200 Fiber Analyzer",
+      "tipo": "Analizador de fibra"
+    },
+    {
+      "carpeta_origen": "MAQUINA 9",
+      "fotos": 83,
+      "clase_yolo": "shimadzu_gc2014",
+      "nombre": "Cromatógrafo de gases Shimadzu GC-2014",
+      "tipo": "Cromatógrafo de gases"
+    },
+    {
+      "carpeta_origen": "MAQUINA 10",
+      "fotos": 13,
+      "clase_yolo": "estufa_secado",
+      "nombre": "Estufa de secado de laboratorio (acero inoxidable)",
+      "tipo": "Estufa / horno de secado"
+    },
+    {
+      "carpeta_origen": "MAQUINA 11",
+      "fotos": 21,
+      "clase_yolo": "selladora_aie200",
+      "nombre": "Selladora de impulso AIE-200",
+      "tipo": "Selladora de bolsas (filter bags)"
+    },
+    {
+      "carpeta_origen": "MAQUINA 12",
+      "fotos": 36,
+      "clase_yolo": "desecador",
+      "nombre": "Desecador de vidrio",
+      "tipo": "Desecador"
+    }
+  ]
+}

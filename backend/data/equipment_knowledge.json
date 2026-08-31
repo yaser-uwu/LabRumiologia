@@ -1,0 +1,96 @@
+{
+  "version": 2,
+  "comment": "Equipos reales identificados en las fotos de Modelos lab. Los vector_store_ids se rellenan con upload_vector_stores.py",
+  "shared_vector_store_ids": [],
+  "aliases": {
+    "ohaus_pr224": "ohaus_pr",
+    "ohaus pr224": "ohaus_pr",
+    "pr_series": "ohaus_pr",
+    "balanza_analitica": "ohaus_pr",
+    "aquasearcher_ab33m1": "aquasearcher",
+    "aquasearcher ab33m1": "aquasearcher",
+    "phmetro": "aquasearcher",
+    "incubadora": "ankom_daisy_ii",
+    "daisy": "ankom_daisy_ii",
+    "daisy_ii": "ankom_daisy_ii",
+    "banio_maria": "banio_maria_memmert",
+    "memmert": "banio_maria_memmert",
+    "fiber_analyzer": "ankom_a200",
+    "gc2014": "shimadzu_gc2014",
+    "cromatografo": "shimadzu_gc2014",
+    "lkb2002": "contador_colonias",
+    "lkb_2002": "contador_colonias",
+    "pa214": "ohaus_pa214",
+    "pioneer": "ohaus_pa214",
+    "aie200": "selladora_aie200",
+    "impulse_sealer": "selladora_aie200"
+  },
+  "equipments": {
+    "ankom_daisy_ii": {
+      "name": "Incubadora ANKOM Daisy II",
+      "docs_dir": "ankom_daisy_ii",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "aquasearcher": {
+      "name": "OHAUS AquaSearcher AB33",
+      "docs_dir": "aquasearcher",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "ohaus_pr": {
+      "name": "Balanza OHAUS PR Series",
+      "docs_dir": "ohaus_pr",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "contador_colonias": {
+      "name": "Contador de colonias POL-EKO LKB 2002",
+      "docs_dir": "contador_colonias",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "ohaus_pa214": {
+      "name": "Balanza OHAUS Pioneer PA214",
+      "docs_dir": "ohaus_pa214",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "banio_maria_memmert": {
+      "name": "Baño María Memmert",
+      "docs_dir": "banio_maria_memmert",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "ankom_a200": {
+      "name": "ANKOM 200 Fiber Analyzer",
+      "docs_dir": "ankom_a200",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "shimadzu_gc2014": {
+      "name": "Shimadzu GC-2014",
+      "docs_dir": "shimadzu_gc2014",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "estufa_secado": {
+      "name": "Estufa de secado",
+      "docs_dir": "estufa_secado",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "selladora_aie200": {
+      "name": "Selladora AIE-200",
+      "docs_dir": "selladora_aie200",
+      "vector_store_ids": [],
+      "file_ids": []
+    },
+    "desecador": {
+      "name": "Desecador de vidrio",
+      "docs_dir": "desecador",
+      "vector_store_ids": [],
+      "file_ids": []
+    }
+  }
+}

@@ -1,0 +1,18 @@
+<!-- Clases = equipos reales del Laboratorio de Rumiología (fotos Modelos lab). -->
+<View>
+  <Header value="Dibuje un recuadro por cada equipo visible y elija su clase."/>
+  <Image name="image" value="$image" zoom="true" zoomControl="true"/>
+  <RectangleLabels name="label" toName="image" strokeWidth="3">
+    <Label value="ankom_daisy_ii" background="#E53935"/>
+    <Label value="aquasearcher" background="#1E88E5"/>
+    <Label value="ohaus_pr" background="#43A047"/>
+    <Label value="contador_colonias" background="#FB8C00"/>
+    <Label value="ohaus_pa214" background="#8E24AA"/>
+    <Label value="banio_maria_memmert" background="#00ACC1"/>
+    <Label value="ankom_a200" background="#5D4037"/>
+    <Label value="shimadzu_gc2014" background="#3949AB"/>
+    <Label value="estufa_secado" background="#FDD835"/>
+    <Label value="selladora_aie200" background="#26A69A"/>
+    <Label value="desecador" background="#EC407A"/>
+  </RectangleLabels>
+</View>
