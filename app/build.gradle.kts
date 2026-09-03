@@ -15,7 +15,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
 
         buildConfigField("String", "GEMINI_API_KEY", "\"${escapeJava(geminiValue("GEMINI_API_KEY", "gemini.api.key"))}\"")
-        buildConfigField("String", "GEMINI_MODEL", "\"${escapeJava(geminiValue("LLM_MODEL", "gemini.model").ifEmpty { "gemini-3.1-flash-lite" })}\"")
+        buildConfigField("String", "GEMINI_MODEL", "\"${escapeJava(geminiValue("LLM_MODEL", "gemini.model").ifEmpty { "gemini-3.6-flash" })}\"")
     }
 
     buildTypes {
@@ -45,6 +45,7 @@ dependencies {
     implementation(libs.androidx.camera.lifecycle)
     implementation(libs.androidx.camera.view)
     implementation(libs.tensorflow.lite)
+    implementation(libs.tensorflow.lite.select.tf.ops)
     implementation(libs.gson)
     implementation(libs.activity.ktx)
     implementation(libs.appcompat)
@@ -65,8 +66,23 @@ val syncLabDocs = tasks.register<Copy>("syncLabDocs") {
     into(file("src/main/assets/docs"))
 }
 
+val syncModel = tasks.register<Copy>("syncModel") {
+    group = "lab"
+    description = "Copia model.tflite (float32) entrenado a assets de la app"
+    val candidates = listOf(
+        rootProject.file("ml/models/model.tflite"),
+        rootProject.file("ml/models/tflite_float32/best_float32.tflite"),
+        rootProject.file("ml/models/best_saved_model/best_float32.tflite"),
+    )
+    val src = candidates.firstOrNull { it.exists() }
+    onlyIf { src != null }
+    from(src!!)
+    into(file("src/main/assets"))
+    rename { "model.tflite" }
+}
+
 afterEvaluate {
-    tasks.named("preBuild").configure { dependsOn(syncLabDocs) }
+    tasks.named("preBuild").configure { dependsOn(syncLabDocs, syncModel) }
 }
 
 fun escapeJava(value: String): String =

@@ -1,8 +1,8 @@
 # Rutas relativas a este archivo (ml/dataset/)
 path: .
-train: yolo_ls/images/train
-val: yolo_ls/images/val
-test: yolo_ls/images/test
+train: images/train
+val: images/val
+test: images/test
 
 nc: 11
 names:

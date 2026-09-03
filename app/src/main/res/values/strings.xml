@@ -16,7 +16,8 @@
     <string name="confidence_format">%1$d%%</string>
     <string name="sources_label">Fuentes:</string>
     <string name="camera_permission_required">Se necesita permiso de cámara</string>
-    <string name="model_missing">Coloque model.tflite en assets tras entrenar el modelo</string>
+    <string name="model_missing">No se encontró model.tflite. Ejecute Run en Android Studio para reinstalar la app.</string>
+    <string name="model_load_error">Error al cargar el modelo: %1$s</string>
     <string name="chat_title">Asistente · %1$s</string>
     <string name="chat_intro">Pregunte sobre función, operación, seguridad o mantenimiento. Con internet, Gemini responde usando las guías de este equipo. Sin red, se muestran extractos de las mismas guías.</string>
     <string name="chat_consulting">Consultando las guías…</string>

@@ -79,7 +79,36 @@ def remap_label_file(src: Path, dst: Path, src_names: list[str], dst_names: list
     return len(lines_out)
 
 
-def copy_yolo_export(yolo_root: Path, out_images: Path, out_labels: Path, target_names: list[str]) -> int:
+def resolve_image_stem(label_stem: str, image_index: dict[str, Path]) -> str | None:
+    """Empareja etiquetas YOLO de Label Studio (a veces con prefijo UUID) con fotos locales."""
+    if label_stem in image_index:
+        return label_stem
+    if "-" in label_stem:
+        suffix = label_stem.split("-", 1)[1]
+        if suffix in image_index:
+            return suffix
+    for stem in image_index:
+        if label_stem.endswith(stem) or stem in label_stem:
+            return stem
+    return None
+
+
+def build_image_index(images_dir: Path) -> dict[str, Path]:
+    exts = {".jpg", ".jpeg", ".png", ".bmp", ".webp"}
+    return {
+        p.stem: p
+        for p in images_dir.iterdir()
+        if p.is_file() and p.suffix.lower() in exts
+    }
+
+
+def copy_yolo_export(
+    yolo_root: Path,
+    out_images: Path,
+    out_labels: Path,
+    target_names: list[str],
+    images_dir: Path | None = None,
+) -> int:
     src_names = read_classes(yolo_root / "classes.txt")
     unknown = [n for n in src_names if n not in target_names]
     if unknown:
@@ -88,18 +117,49 @@ def copy_yolo_export(yolo_root: Path, out_images: Path, out_labels: Path, target
             + ", ".join(unknown)
             + "\nSe omitirán esas cajas. Ajuste Label Studio o data.yaml."
         )
-    images_dir = yolo_root / "images"
+    export_images_dir = yolo_root / "images"
     labels_dir = yolo_root / "labels"
     out_images.mkdir(parents=True, exist_ok=True)
     out_labels.mkdir(parents=True, exist_ok=True)
+
+    external_images: dict[str, Path] = {}
+    if images_dir is not None:
+        if not images_dir.is_dir():
+            raise SystemExit(f"No existe la carpeta de imágenes: {images_dir}")
+        external_images = build_image_index(images_dir)
+
     count = 0
-    for img in sorted(images_dir.iterdir()) if images_dir.is_dir() else []:
-        if img.suffix.lower() not in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
+    if export_images_dir.is_dir() and any(export_images_dir.iterdir()):
+        for img in sorted(export_images_dir.iterdir()):
+            if img.suffix.lower() not in {".jpg", ".jpeg", ".png", ".bmp", ".webp"}:
+                continue
+            lbl = labels_dir / f"{img.stem}.txt"
+            if not lbl.exists():
+                print(f"Sin etiqueta, se omite: {img.name}")
+                continue
+            dest_lbl = out_labels / f"{img.stem}.txt"
+            n = remap_label_file(lbl, dest_lbl, src_names, target_names)
+            if n == 0:
+                dest_lbl.unlink(missing_ok=True)
+                print(f"Sin cajas válidas, se omite: {img.name}")
+                continue
+            shutil.copy2(img, out_images / img.name)
+            count += 1
+        return count
+
+    if not external_images:
+        raise SystemExit(
+            "El export YOLO no incluye imágenes (común si Label Studio las sirve por URL).\n"
+            "Indique la carpeta original con --images, por ejemplo:\n"
+            "  python ml/scripts/import_labelstudio.py --src export.zip --images ml/labelstudio/images --split"
+        )
+
+    for lbl in sorted(labels_dir.glob("*.txt")):
+        image_stem = resolve_image_stem(lbl.stem, external_images)
+        if image_stem is None:
+            print(f"Imagen no encontrada para etiqueta: {lbl.name}")
             continue
-        lbl = labels_dir / f"{img.stem}.txt"
-        if not lbl.exists():
-            print(f"Sin etiqueta, se omite: {img.name}")
-            continue
+        img = external_images[image_stem]
         dest_lbl = out_labels / f"{img.stem}.txt"
         n = remap_label_file(lbl, dest_lbl, src_names, target_names)
         if n == 0:
@@ -178,7 +238,12 @@ def extract_src(src: Path) -> tuple[Path, Path | None]:
 def main() -> None:
     parser = argparse.ArgumentParser(description="Importar etiquetas Label Studio → YOLO")
     parser.add_argument("--src", type=Path, required=True, help="ZIP YOLO, carpeta YOLO o JSON de Label Studio")
-    parser.add_argument("--images", type=Path, default=None, help="Carpeta de fotos (solo para export JSON)")
+    parser.add_argument(
+        "--images",
+        type=Path,
+        default=ROOT / "labelstudio" / "images",
+        help="Carpeta de fotos (JSON o export YOLO sin imágenes embebidas)",
+    )
     parser.add_argument("--data", type=Path, default=DEFAULT_YAML)
     parser.add_argument("--out", type=Path, default=DATASET / "all")
     parser.add_argument("--split", action="store_true", help="Tras importar, generar train/val/test")
@@ -206,7 +271,9 @@ def main() -> None:
                     "No se encontró un export YOLO (classes.txt + labels/). "
                     "En Label Studio: Export → YOLO."
                 )
-            count = copy_yolo_export(yolo_root, out_images, out_labels, target_names)
+            count = copy_yolo_export(
+                yolo_root, out_images, out_labels, target_names, images_dir=args.images
+            )
     finally:
         if tmp is not None:
             shutil.rmtree(tmp, ignore_errors=True)

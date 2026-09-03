@@ -36,9 +36,25 @@ def convert_onnx_to_tflite(onnx_path: Path, imgsz: int) -> Path:
 
             out_dir = onnx_path.parent / "onnx2tf_out"
             subprocess.check_call(
-                [sys.executable, "-m", "onnx2tf", "-i", str(onnx_path), "-o", str(out_dir)]
+                [
+                    sys.executable,
+                    "-m",
+                    "onnx2tf",
+                    "-i",
+                    str(onnx_path),
+                    "-o",
+                    str(out_dir),
+                    "-ett",
+                    "float32",
+                    "-coion",
+                ]
             )
-            candidates = list(out_dir.rglob("*.tflite"))
+            float32 = out_dir / "best_float32.tflite"
+            if float32.exists():
+                return float32
+            candidates = [p for p in out_dir.rglob("*.tflite") if "float32" in p.name.lower()]
+            if not candidates:
+                candidates = list(out_dir.rglob("*.tflite"))
             if not candidates:
                 raise RuntimeError("onnx2tf no generó .tflite")
             return candidates[0]

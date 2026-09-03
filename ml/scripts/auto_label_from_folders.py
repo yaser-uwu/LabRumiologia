@@ -107,6 +107,8 @@ def main() -> None:
         raise SystemExit(f"No hay fotos en {args.raw}/<clase>/")
 
     print(f"Etiquetas iniciales: {len(pairs)} en {DATASET / 'all'}")
+    print("Siguiente: python ml/scripts/prepare_labelstudio.py")
+    print("          label-studio start   (ver docs/LABEL_STUDIO.md)")
     if not args.split:
         return
 

@@ -1,92 +1,76 @@
 # Dataset — Laboratorio de Rumiología (UTEQ)
 
+Guía completa de etiquetado: **`docs/LABEL_STUDIO.md`**
+
 ## Autorización
 
 Antes de fotografiar, solicite autorización al responsable del Laboratorio de Rumiología.
 Conserve evidencias (correo o constancia) en `docs/evidencias/`.
 
-## Clases (equipos)
+## Clases (equipos = clase YOLO)
 
-La **clase YOLO es el equipo**. Debe coincidir con el `value` en Label Studio y con
-la carpeta de manuales en `backend/data/docs/<clase>/`.
+La **clase YOLO es el equipo**. Debe coincidir con Label Studio, `data.yaml` y
+`backend/data/docs/<clase>/`.
 
-| id YOLO | Nombre |
-|---------|--------|
-| incubadora | Incubadora |
-| agitador_orbital | Agitador orbital |
-| balanza_analitica | Balanza analítica |
-| phmetro | pHmetro |
-| centrifugadora | Centrifugadora |
-| estufa_secado | Estufa de secado |
-| banio_maria | Baño María |
-| microscopio | Microscopio |
+| id | clase YOLO | Equipo |
+|----|------------|--------|
+| 0 | ankom_daisy_ii | Incubadora ANKOM Daisy II |
+| 1 | aquasearcher | OHAUS AquaSearcher |
+| 2 | ohaus_pr | Balanza OHAUS PR Series |
+| 3 | contador_colonias | Contador POL-EKO LKB 2002 |
+| 4 | ohaus_pa214 | Balanza OHAUS Pioneer PA214 |
+| 5 | banio_maria_memmert | Baño María Memmert |
+| 6 | ankom_a200 | ANKOM 200 Fiber Analyzer |
+| 7 | shimadzu_gc2014 | Cromatógrafo Shimadzu GC-2014 |
+| 8 | estufa_secado | Estufa de secado |
+| 9 | selladora_aie200 | Selladora AIE-200 |
+| 10 | desecador | Desecador de vidrio |
 
-Ajuste esta lista si su captura real usa otros equipos (6–10 clases), por ejemplo
-modelos comerciales (`ohaus_pr224`). En ese caso añada la clase en Label Studio,
-`data.yaml` y `backend/data/equipment_knowledge.json`.
+Inventario de fotos por carpeta: `ml/dataset/inventario_equipos.json`.
 
-## Label Studio
+## Label Studio (resumen)
 
-YOLO necesita, por cada foto, un `.txt` con la **ubicación del recuadro** y el **id de clase**.
+1. `python ml/scripts/sync_photos_from_inventario.py --src "...\Modelos lab"`
+2. `python ml/scripts/auto_label_from_folders.py`
+3. `python ml/scripts/prepare_labelstudio.py` → `label-studio start`
+4. Etiquetar con `ml/labelstudio/config.xml`
+5. Export → YOLO → `ml/dataset/exports/labelstudio_yolo.zip`
+6. `python ml/scripts/import_labelstudio.py --src ... --split`
 
-1. Instale Label Studio: https://labelstud.io/ (`pip install label-studio` y `label-studio`).
-2. Nuevo proyecto → plantilla *Object Detection with Bounding Boxes*.
-3. Pegue `ml/labelstudio/config.xml` en *Labeling Interface*.
-4. Importe las fotos del laboratorio.
-5. Etiquete: un recuadro por equipo visible; elija la clase correcta.
-6. *Export* → formato **YOLO** (ZIP con `images/`, `labels/`, `classes.txt`).
-7. Importe al repo:
-
-```bash
-python ml/scripts/import_labelstudio.py --src export-labelstudio.zip --split
-```
-
-Cada línea de `labels/*.txt` tiene el formato YOLO: `class_id cx cy width height` (valores 0–1).
-
-## Captura
-
-- Meta: **80–150 fotografías por clase**.
-- Variar: ángulo, distancia, iluminación, oclusión parcial, fondo del lab.
-- Preferir fotos reales del laboratorio (no stock).
+Cada `.txt` de etiqueta tiene: `class_id cx cy width height` (0–1).
 
 ## Estructura
 
 ```
 ml/dataset/
-  images/
-    train/
-    val/
-    test/
-  labels/
-    train/
-    val/
-    test/
+  raw/<clase>/          # fotos sin etiquetar (por carpeta)
+  all/images|labels/    # pool antes del split
+  images/train|val|test/
+  labels/train|val|test/
   data.yaml
 ```
 
 ## Split
 
-- 70 % train
-- 15 % val
-- 15 % test
+- 70 % train · 15 % val · 15 % test (estratificado por clase)
 
-Estratificar por clase. No mezclar la misma foto (o recortes casi idénticos) en varios splits.
+## Conteos (actualice tras etiquetar)
 
-`--split` en el importador llama a `ml/scripts/split_dataset.py`.
-
-## Conteos
-
-Complete la tabla tras etiquetar:
+Ejecute: `python ml/scripts/count_dataset.py --split`
 
 | Clase | Total | Train | Val | Test |
 |-------|-------|-------|-----|------|
-| incubadora | | | | |
-| agitador_orbital | | | | |
-| balanza_analitica | | | | |
-| phmetro | | | | |
-| centrifugadora | | | | |
+| ankom_daisy_ii | | | | |
+| aquasearcher | | | | |
+| ohaus_pr | | | | |
+| contador_colonias | | | | |
+| ohaus_pa214 | | | | |
+| banio_maria_memmert | | | | |
+| ankom_a200 | | | | |
+| shimadzu_gc2014 | | | | |
 | estufa_secado | | | | |
-| banio_maria | | | | |
-| microscopio | | | | |
+| selladora_aie200 | | | | |
+| desecador | | | | |
 
-> El dataset sintético de prueba (`generate_sample_dataset.py`) solo sirve para validar el pipeline. Reemplácelo con fotos reales etiquetadas en Label Studio.
+> El dataset sintético (`generate_sample_dataset.py`) solo valida el pipeline.
+> Para la entrega use fotos reales etiquetadas en Label Studio.

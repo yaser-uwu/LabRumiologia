@@ -1,13 +1,11 @@
 """
 Entrena un detector YOLO (Ultralytics) con el dataset etiquetado en Label Studio.
 
-El enunciado menciona YOLOv15 para identificar equipos. Ultralytics no publica un
-checkpoint llamado yolov15; la familia actual (2026) es YOLO26, con la misma API
-de entrenamiento sobre anotaciones YOLO (class cx cy w h). Por defecto se usa
-yolo26n.pt (nano, adecuado para exportar a TFLite / Android).
+El enunciado pide YOLOv15. Ultralytics no publica yolov15.pt; se usa YOLO26 (familia
+YOLO actual, enero 2026) con la misma API y formato de anotaciones YOLO.
 
   python ml/scripts/train_yolo.py --data ml/dataset/data.yaml
-  python ml/scripts/train_yolo.py --model yolo11n.pt --epochs 80
+  python ml/scripts/train_yolo.py --model yolo26n.pt --epochs 80 --imgsz 512
 """
 from __future__ import annotations
 
