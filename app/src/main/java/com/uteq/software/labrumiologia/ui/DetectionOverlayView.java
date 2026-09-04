@@ -39,10 +39,12 @@ public class DetectionOverlayView extends View {
     public DetectionOverlayView(Context context, @Nullable AttributeSet attrs) {
         super(context, attrs);
         boxPaint.setStyle(Paint.Style.STROKE);
-        boxPaint.setStrokeWidth(4f);
+        boxPaint.setStrokeWidth(3f);
+        boxPaint.setStrokeJoin(Paint.Join.MITER);
         boxPaint.setColor(ContextCompat.getColor(context, R.color.box_stroke));
         selectedPaint.setStyle(Paint.Style.STROKE);
-        selectedPaint.setStrokeWidth(6f);
+        selectedPaint.setStrokeWidth(4.5f);
+        selectedPaint.setStrokeJoin(Paint.Join.MITER);
         selectedPaint.setColor(ContextCompat.getColor(context, R.color.box_selected));
         textPaint.setColor(ContextCompat.getColor(context, R.color.white));
         textPaint.setTextSize(28f);
@@ -103,8 +105,14 @@ public class DetectionOverlayView extends View {
         if (viewBoxes.size() != detections.size()) rebuildViewBoxes();
         for (int i = 0; i < detections.size(); i++) {
             RectF box = viewBoxes.get(i);
-            canvas.drawRoundRect(box, 14f, 14f, i == selectedIndex ? selectedPaint : boxPaint);
-            String badge = String.format(Locale.getDefault(), "%.0f%%", detections.get(i).confidence * 100f);
+            // Rectángulo sin redondeo para pegarse al borde del equipo.
+            canvas.drawRect(box, i == selectedIndex ? selectedPaint : boxPaint);
+            String badge = String.format(
+                    Locale.getDefault(),
+                    "%s · %.0f%%",
+                    detections.get(i).label,
+                    detections.get(i).confidence * 100f
+            );
             float tw = textPaint.measureText(badge);
             float top = Math.max(box.top - 36f, 8f);
             labelRect.set(box.left, top, box.left + tw + 20f, top + 32f);

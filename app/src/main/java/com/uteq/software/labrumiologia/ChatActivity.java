@@ -1,9 +1,23 @@
 package com.uteq.software.labrumiologia;
 
+import android.Manifest;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.speech.RecognitionListener;
+import android.speech.RecognizerIntent;
+import android.speech.SpeechRecognizer;
+import android.speech.tts.TextToSpeech;
+import android.speech.tts.Voice;
+import android.view.View;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+import androidx.core.content.ContextCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
@@ -12,16 +26,38 @@ import com.google.android.material.textfield.TextInputEditText;
 import com.uteq.software.labrumiologia.data.LocalGuide;
 import com.uteq.software.labrumiologia.ui.ChatAdapter;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Locale;
+import java.util.Set;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-public class ChatActivity extends AppCompatActivity {
+public class ChatActivity extends AppCompatActivity implements TextToSpeech.OnInitListener {
+    private static final int REQ_MIC = 210;
+    private static final String PREFS = "assistant_voice";
+    private static final String KEY_VOICE = "voice_name";
+
     private String equipmentId;
     private ChatAdapter adapter;
     private TextInputEditText input;
     private MaterialButton btnSend;
+    private MaterialButton btnMic;
+    private MaterialButton btnVoice;
+    private TextView voiceStatus;
+    private TextView voiceName;
     private LocalGuide guide;
     private final ExecutorService io = Executors.newSingleThreadExecutor();
+
+    private SpeechRecognizer speechRecognizer;
+    private TextToSpeech tts;
+    private boolean ttsReady;
+    private boolean listening;
+    private boolean voiceMode;
+    private final List<Voice> spanishVoices = new ArrayList<>();
+    private int voiceIndex = 0;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -41,32 +77,311 @@ public class ChatActivity extends AppCompatActivity {
 
         input = findViewById(R.id.chatInput);
         btnSend = findViewById(R.id.btnSend);
-        btnSend.setOnClickListener(v -> sendMessage());
+        btnMic = findViewById(R.id.btnMic);
+        btnVoice = findViewById(R.id.btnVoice);
+        voiceStatus = findViewById(R.id.voiceStatus);
+        voiceName = findViewById(R.id.voiceName);
+
+        btnSend.setOnClickListener(v -> {
+            voiceMode = false;
+            sendMessage(textFromInput());
+        });
+        btnMic.setOnClickListener(v -> toggleVoice());
+        btnVoice.setOnClickListener(v -> cycleVoice());
         adapter.add(new ChatAdapter.Message("Sistema", getString(R.string.chat_intro), null));
+
+        tts = new TextToSpeech(this, this);
+        setupSpeechRecognizer();
     }
 
-    private void sendMessage() {
-        String question = input.getText() != null ? input.getText().toString().trim() : "";
-        if (question.isEmpty()) return;
+    @Override
+    public void onInit(int status) {
+        ttsReady = status == TextToSpeech.SUCCESS;
+        if (!ttsReady || tts == null) return;
+        tts.setLanguage(new Locale("es", "ES"));
+        tts.setSpeechRate(0.95f);
+        tts.setPitch(1.0f);
+        loadSpanishVoices();
+        applySavedOrBestVoice();
+    }
+
+    private void loadSpanishVoices() {
+        spanishVoices.clear();
+        Set<Voice> all = tts.getVoices();
+        if (all == null) return;
+        for (Voice v : all) {
+            if (v == null || v.getLocale() == null) continue;
+            if (!"es".equalsIgnoreCase(v.getLocale().getLanguage())) continue;
+            spanishVoices.add(v);
+        }
+        if (spanishVoices.isEmpty()) return;
+        Collections.sort(spanishVoices, Comparator
+                .comparingInt((Voice v) -> -v.getQuality())
+                .thenComparing(v -> v.getLocale().toLanguageTag())
+                .thenComparing(Voice::getName));
+    }
+
+    private void applySavedOrBestVoice() {
+        if (spanishVoices.isEmpty()) {
+            voiceName.setText(getString(R.string.voice_selected, "predeterminada"));
+            return;
+        }
+        SharedPreferences prefs = getSharedPreferences(PREFS, MODE_PRIVATE);
+        String saved = prefs.getString(KEY_VOICE, null);
+        int idx = -1;
+        if (saved != null) {
+            for (int i = 0; i < spanishVoices.size(); i++) {
+                if (saved.equals(spanishVoices.get(i).getName())) {
+                    idx = i;
+                    break;
+                }
+            }
+        }
+        if (idx < 0) idx = preferredVoiceIndex();
+        setVoiceAt(idx, false);
+    }
+
+    /** Prioriza es-ES / es-MX y voces con nombre femenino habituales del motor. */
+    private int preferredVoiceIndex() {
+        for (int i = 0; i < spanishVoices.size(); i++) {
+            Voice v = spanishVoices.get(i);
+            String name = v.getName().toLowerCase(Locale.ROOT);
+            String tag = v.getLocale().toLanguageTag().toLowerCase(Locale.ROOT);
+            boolean esRegion = tag.startsWith("es-es") || tag.startsWith("es-mx") || tag.startsWith("es-us");
+            boolean femaleHint = name.contains("female") || name.contains("femen")
+                    || name.contains("woman") || name.contains("wavenet-a")
+                    || name.contains("wavenet-c") || name.contains("neural2-a")
+                    || name.contains("neural2-c") || name.contains("es-es-x-eee")
+                    || name.contains("es-us-x-sfb");
+            if (esRegion && femaleHint) return i;
+        }
+        for (int i = 0; i < spanishVoices.size(); i++) {
+            String tag = spanishVoices.get(i).getLocale().toLanguageTag().toLowerCase(Locale.ROOT);
+            if (tag.startsWith("es-es") || tag.startsWith("es-mx")) return i;
+        }
+        return 0;
+    }
+
+    private void cycleVoice() {
+        if (!ttsReady || tts == null) return;
+        if (spanishVoices.size() <= 1) {
+            Toast.makeText(this, R.string.voice_none, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        setVoiceAt((voiceIndex + 1) % spanishVoices.size(), true);
+    }
+
+    private void setVoiceAt(int index, boolean preview) {
+        if (tts == null || spanishVoices.isEmpty()) return;
+        voiceIndex = Math.max(0, Math.min(index, spanishVoices.size() - 1));
+        Voice voice = spanishVoices.get(voiceIndex);
+        tts.setVoice(voice);
+        getSharedPreferences(PREFS, MODE_PRIVATE).edit()
+                .putString(KEY_VOICE, voice.getName())
+                .apply();
+        voiceName.setText(getString(R.string.voice_selected, friendlyVoiceLabel(voice)));
+        if (preview) {
+            tts.speak(getString(R.string.voice_preview), TextToSpeech.QUEUE_FLUSH, null, "voice_preview");
+            setVoiceStatus(getString(R.string.voice_selected, friendlyVoiceLabel(voice)));
+        }
+    }
+
+    private static String friendlyVoiceLabel(Voice voice) {
+        String tag = voice.getLocale().toLanguageTag();
+        String name = voice.getName();
+        // Acorta nombres largos del motor (Google / Samsung).
+        int slash = name.lastIndexOf('/');
+        if (slash >= 0 && slash + 1 < name.length()) name = name.substring(slash + 1);
+        if (name.length() > 28) name = name.substring(0, 28) + "…";
+        return tag + " · " + name;
+    }
+
+    private void setupSpeechRecognizer() {
+        if (!SpeechRecognizer.isRecognitionAvailable(this)) {
+            btnMic.setEnabled(false);
+            setVoiceStatus(getString(R.string.voice_unavailable));
+            return;
+        }
+        speechRecognizer = SpeechRecognizer.createSpeechRecognizer(this);
+        speechRecognizer.setRecognitionListener(new RecognitionListener() {
+            @Override
+            public void onReadyForSpeech(Bundle params) {
+                setVoiceStatus(getString(R.string.voice_listening));
+            }
+
+            @Override
+            public void onBeginningOfSpeech() {
+                setVoiceStatus(getString(R.string.voice_listening));
+            }
+
+            @Override
+            public void onRmsChanged(float rmsdB) {
+            }
+
+            @Override
+            public void onBufferReceived(byte[] buffer) {
+            }
+
+            @Override
+            public void onEndOfSpeech() {
+                setVoiceStatus(getString(R.string.voice_processing));
+            }
+
+            @Override
+            public void onError(int error) {
+                listening = false;
+                updateMicUi(false);
+                setVoiceStatus(getString(R.string.voice_error));
+            }
+
+            @Override
+            public void onResults(Bundle results) {
+                listening = false;
+                updateMicUi(false);
+                ArrayList<String> texts = results.getStringArrayList(SpeechRecognizer.RESULTS_RECOGNITION);
+                if (texts == null || texts.isEmpty()) {
+                    setVoiceStatus(getString(R.string.voice_error));
+                    return;
+                }
+                String heard = texts.get(0).trim();
+                if (heard.isEmpty()) {
+                    setVoiceStatus(getString(R.string.voice_error));
+                    return;
+                }
+                input.setText(heard);
+                voiceMode = true;
+                setVoiceStatus(getString(R.string.voice_heard, heard));
+                sendMessage(heard);
+            }
+
+            @Override
+            public void onPartialResults(Bundle partialResults) {
+            }
+
+            @Override
+            public void onEvent(int eventType, Bundle params) {
+            }
+        });
+    }
+
+    private void toggleVoice() {
+        if (listening) {
+            stopListening();
+            return;
+        }
+        if (ContextCompat.checkSelfPermission(this, Manifest.permission.RECORD_AUDIO)
+                != PackageManager.PERMISSION_GRANTED) {
+            ActivityCompat.requestPermissions(
+                    this, new String[]{Manifest.permission.RECORD_AUDIO}, REQ_MIC);
+            return;
+        }
+        startListening();
+    }
+
+    private void startListening() {
+        if (speechRecognizer == null) {
+            Toast.makeText(this, R.string.voice_unavailable, Toast.LENGTH_SHORT).show();
+            return;
+        }
+        if (tts != null) tts.stop();
+        Intent intent = new Intent(RecognizerIntent.ACTION_RECOGNIZE_SPEECH);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE_MODEL, RecognizerIntent.LANGUAGE_MODEL_FREE_FORM);
+        intent.putExtra(RecognizerIntent.EXTRA_LANGUAGE, "es-ES");
+        intent.putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, false);
+        intent.putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1);
+        listening = true;
+        updateMicUi(true);
+        setVoiceStatus(getString(R.string.voice_listening));
+        speechRecognizer.startListening(intent);
+    }
+
+    private void stopListening() {
+        listening = false;
+        updateMicUi(false);
+        if (speechRecognizer != null) speechRecognizer.stopListening();
+        setVoiceStatus(null);
+    }
+
+    private void updateMicUi(boolean active) {
+        btnMic.setBackgroundTintList(
+                ContextCompat.getColorStateList(this, active ? R.color.box_selected : R.color.primary));
+    }
+
+    private void setVoiceStatus(String text) {
+        if (text == null || text.isEmpty()) {
+            voiceStatus.setVisibility(View.GONE);
+            voiceStatus.setText("");
+            return;
+        }
+        voiceStatus.setVisibility(View.VISIBLE);
+        voiceStatus.setText(text);
+    }
+
+    private String textFromInput() {
+        return input.getText() != null ? input.getText().toString().trim() : "";
+    }
+
+    private void sendMessage(String question) {
+        if (question == null || question.isEmpty()) return;
 
         adapter.add(new ChatAdapter.Message("Usted", question, null));
         input.setText("");
         btnSend.setEnabled(false);
+        btnMic.setEnabled(false);
         adapter.add(new ChatAdapter.Message("Asistente", getString(R.string.chat_consulting), null, true));
+
+        final boolean speakReply = voiceMode;
+        voiceMode = false;
 
         io.execute(() -> {
             LocalGuide.Reply reply = guide.ask(question, equipmentId);
             runOnUiThread(() -> {
                 if (isDestroyed()) return;
                 btnSend.setEnabled(true);
+                btnMic.setEnabled(true);
                 adapter.removeLastIfPlaceholder();
                 adapter.add(new ChatAdapter.Message("Asistente", reply.answer, reply.sources));
+                if (speakReply) speak(reply.answer);
             });
         });
     }
 
+    private void speak(String text) {
+        if (!ttsReady || tts == null || text == null || text.isEmpty()) return;
+        String clean = text
+                .replaceAll("(?m)^#+\\s*", "")
+                .replaceAll("[*`_#>]", "")
+                .replaceAll("\\s+", " ")
+                .trim();
+        if (clean.length() > 900) clean = clean.substring(0, 900) + "…";
+        setVoiceStatus(getString(R.string.voice_speaking));
+        tts.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "lab_reply");
+    }
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == REQ_MIC) {
+            if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                startListening();
+            } else {
+                Toast.makeText(this, R.string.mic_permission_required, Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
     @Override
     protected void onDestroy() {
+        listening = false;
+        if (speechRecognizer != null) {
+            speechRecognizer.destroy();
+            speechRecognizer = null;
+        }
+        if (tts != null) {
+            tts.stop();
+            tts.shutdown();
+            tts = null;
+        }
         io.shutdownNow();
         super.onDestroy();
     }

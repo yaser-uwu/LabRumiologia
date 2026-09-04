@@ -39,9 +39,10 @@
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="12dp"
-            android:minHeight="64dp"
-            android:nestedScrollingEnabled="false"
-            android:overScrollMode="never" />
+            android:maxHeight="168dp"
+            android:minHeight="56dp"
+            android:nestedScrollingEnabled="true"
+            android:overScrollMode="ifContentScrolls" />
 
         <com.google.android.material.button.MaterialButton
             android:id="@+id/btnInfo"

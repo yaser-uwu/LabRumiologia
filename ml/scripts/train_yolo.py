@@ -34,7 +34,7 @@ def load_model(requested: str):
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--data", type=Path, default=Path("ml/dataset/data.yaml"))
-    parser.add_argument("--epochs", type=int, default=50)
+    parser.add_argument("--epochs", type=int, default=150)
     parser.add_argument("--imgsz", type=int, default=640)
     parser.add_argument("--batch", type=int, default=8)
     parser.add_argument(
@@ -64,6 +64,17 @@ def main():
         project=str(args.project.resolve()),
         name=args.name,
         exist_ok=True,
+        patience=40,
+        close_mosaic=15,
+        cos_lr=True,
+        hsv_h=0.015,
+        hsv_s=0.7,
+        hsv_v=0.4,
+        degrees=5.0,
+        translate=0.08,
+        scale=0.4,
+        fliplr=0.5,
+        mosaic=0.8,
     )
 
     best = Path(results.save_dir) / "weights" / "best.pt"

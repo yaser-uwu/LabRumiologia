@@ -38,9 +38,12 @@ import java.util.Locale;
 public class YoloDetector implements AutoCloseable {
     public static final String MODEL_FILE = "model.tflite";
     public static final String LABELS_FILE = "labels.txt";
-    public static final float CONF_THRESHOLD = 0.35f;
-    public static final float IOU_THRESHOLD = 0.45f;
+    /** Umbral: un poco más permisivo para equipos lejanos sin abrir falsos positivos. */
+    public static final float CONF_THRESHOLD = 0.70f;
+    public static final float IOU_THRESHOLD = 0.50f;
     public static final int MAX_DETECTIONS = 8;
+    /** Reduce cajas sueltas del modelo (~15% por lado; menos en cajas pequeñas). */
+    public static final float BOX_INSET_RATIO = 0.15f;
 
     private enum OutputMode { END2END_ROWS, END2END_COLS, RAW_YOLO }
 
@@ -157,7 +160,7 @@ public class YoloDetector implements AutoCloseable {
             if (conf < CONF_THRESHOLD) continue;
             int cls = Math.round(row[5]);
             if (cls < 0 || cls >= labels.size()) continue;
-            RectF box = toSource(boxFromXYXY(row[0], row[1], row[2], row[3]));
+            RectF box = tighten(toSource(boxFromXYXY(row[0], row[1], row[2], row[3])));
             if (!isValidBox(box)) continue;
             String id = labels.get(cls);
             raw.add(new Detection(id, nameOf(id), conf, box));
@@ -173,7 +176,7 @@ public class YoloDetector implements AutoCloseable {
             if (conf < CONF_THRESHOLD) continue;
             int cls = Math.round(cols[5][i]);
             if (cls < 0 || cls >= labels.size()) continue;
-            RectF box = toSource(boxFromXYXY(cols[0][i], cols[1][i], cols[2][i], cols[3][i]));
+            RectF box = tighten(toSource(boxFromXYXY(cols[0][i], cols[1][i], cols[2][i], cols[3][i])));
             if (!isValidBox(box)) continue;
             String id = labels.get(cls);
             raw.add(new Detection(id, nameOf(id), conf, box));
@@ -199,7 +202,7 @@ public class YoloDetector implements AutoCloseable {
                 }
             }
             if (bestClass < 0 || bestScore < CONF_THRESHOLD) continue;
-            RectF box = toSource(boxFromCenter(cx, cy, w, h));
+            RectF box = tighten(toSource(boxFromCenter(cx, cy, w, h)));
             if (!isValidBox(box)) continue;
             String id = labels.get(bestClass);
             raw.add(new Detection(id, nameOf(id), bestScore, box));
@@ -208,9 +211,14 @@ public class YoloDetector implements AutoCloseable {
     }
 
     private boolean isValidBox(RectF box) {
-        if (box.width() <= 2f || box.height() <= 2f) return false;
+        if (box.width() <= 4f || box.height() <= 4f) return false;
         float imgArea = Math.max(1, srcWidth) * (float) Math.max(1, srcHeight);
-        return box.width() * box.height() >= imgArea * 0.005f;
+        float boxArea = box.width() * box.height();
+        // Permite cajas pequeñas (equipo lejos); descarta ruido minúsculo y cajas que llenan la escena.
+        if (boxArea < imgArea * 0.0015f) return false;
+        if (boxArea > imgArea * 0.95f) return false;
+        float aspect = box.width() / Math.max(1f, box.height());
+        return aspect >= 0.15f && aspect <= 6f;
     }
 
     private String nameOf(String id) {
@@ -225,6 +233,24 @@ public class YoloDetector implements AutoCloseable {
                 clamp((box.right - padX) / scale, 0, srcWidth),
                 clamp((box.bottom - padY) / scale, 0, srcHeight)
         );
+    }
+
+    /** Recorta el exceso típico de YOLO; en cajas pequeñas (lejos) aplica menos inset. */
+    private RectF tighten(RectF box) {
+        float imgArea = Math.max(1, srcWidth) * (float) Math.max(1, srcHeight);
+        float rel = (box.width() * box.height()) / imgArea;
+        float ratio = BOX_INSET_RATIO;
+        if (rel < 0.04f) ratio *= 0.45f;      // lejos: casi no encoger
+        else if (rel < 0.12f) ratio *= 0.70f; // medio
+        float ix = box.width() * ratio;
+        float iyTop = box.height() * (ratio * 0.9f);
+        float iyBottom = box.height() * (ratio * 1.35f);
+        float left = clamp(box.left + ix, 0, srcWidth);
+        float top = clamp(box.top + iyTop, 0, srcHeight);
+        float right = clamp(box.right - ix, 0, srcWidth);
+        float bottom = clamp(box.bottom - iyBottom, 0, srcHeight);
+        if (right - left < 8f || bottom - top < 8f) return box;
+        return new RectF(left, top, right, bottom);
     }
 
     private RectF boxFromXYXY(float x1, float y1, float x2, float y2) {

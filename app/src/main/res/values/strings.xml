@@ -1,9 +1,12 @@
 <resources>
     <string name="app_name">Lab Rumiología</string>
-    <string name="detecting">Apunte de frente al equipo, a unos 50–80 cm</string>
-    <string name="no_detections">Sin coincidencia. Acérquese y evite PCs, mesas o fotos en pantalla</string>
+    <string name="detecting">Apunte de frente al equipo (≥ 70% para mostrar)</string>
+    <string name="no_detections">Sin coincidencia ≥ 70%. Acérquese un poco, ilumine bien o evite pantallas/fotos</string>
     <string name="info_tecnica">Ver ficha técnica</string>
-    <string name="detection_ready">Equipo listo. Abra la ficha para el manual y el asistente</string>
+    <string name="detection_ready">Equipo listo. Abra la ficha para ver la foto, el manual y el asistente</string>
+    <string name="detections_ready">%1$d equipos detectados. Toque uno y abra su ficha</string>
+    <string name="equipment_photo">Foto del equipo</string>
+    <string name="equipment_photo_fallback">Foto de referencia del equipo</string>
     <string name="confidence_badge">%1$d%%</string>
     <string name="section_components">Componentes principales</string>
     <string name="section_usage">Uso básico</string>
@@ -19,6 +22,18 @@
     <string name="model_missing">No se encontró model.tflite. Ejecute Run en Android Studio para reinstalar la app.</string>
     <string name="model_load_error">Error al cargar el modelo: %1$s</string>
     <string name="chat_title">Asistente · %1$s</string>
-    <string name="chat_intro">Pregunte sobre función, operación, seguridad o mantenimiento. Con internet, Gemini responde usando las guías de este equipo. Sin red, se muestran extractos de las mismas guías.</string>
+    <string name="chat_intro">Puede escribir o pulsar el micrófono para hablar. Con internet, Gemini responde usando las guías de este equipo; si pidió por voz, la respuesta también se lee en audio.</string>
     <string name="chat_consulting">Consultando las guías…</string>
+    <string name="voice_talk">Hablar con el asistente</string>
+    <string name="voice_listening">Escuchando… hable ahora</string>
+    <string name="voice_processing">Procesando su voz…</string>
+    <string name="voice_speaking">Reproduciendo respuesta…</string>
+    <string name="voice_heard">Escuché: %1$s</string>
+    <string name="voice_error">No se entendió el audio. Intente de nuevo.</string>
+    <string name="voice_unavailable">Reconocimiento de voz no disponible en este dispositivo</string>
+    <string name="mic_permission_required">Se necesita permiso de micrófono para hablar con el asistente</string>
+    <string name="voice_change">Cambiar voz</string>
+    <string name="voice_selected">Voz: %1$s</string>
+    <string name="voice_preview">Hola, soy el asistente del laboratorio.</string>
+    <string name="voice_none">No hay otras voces en español en este dispositivo</string>
 </resources>

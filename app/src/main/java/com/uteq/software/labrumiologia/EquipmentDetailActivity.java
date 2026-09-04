@@ -1,7 +1,11 @@
 package com.uteq.software.labrumiologia;
 
 import android.content.Intent;
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.os.Bundle;
+import android.view.View;
+import android.widget.ImageView;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
@@ -9,6 +13,8 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.uteq.software.labrumiologia.data.EquipmentRepository;
 import com.uteq.software.labrumiologia.model.EquipmentInfo;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 public class EquipmentDetailActivity extends AppCompatActivity {
@@ -26,6 +32,8 @@ public class EquipmentDetailActivity extends AppCompatActivity {
 
         TextView title = findViewById(R.id.equipmentTitle);
         TextView confidenceView = findViewById(R.id.equipmentConfidence);
+        View imageCard = findViewById(R.id.equipmentImageCard);
+        ImageView imageView = findViewById(R.id.equipmentImage);
         TextView function = findViewById(R.id.equipmentFunction);
         TextView components = findViewById(R.id.equipmentComponents);
         TextView usage = findViewById(R.id.equipmentUsage);
@@ -48,12 +56,32 @@ public class EquipmentDetailActivity extends AppCompatActivity {
             safety.setText("-");
         }
 
+        // Siempre preferir la foto de catálogo (encuadre limpio) frente al recorte de cámara.
+        if (!bindCatalogPhoto(imageView, equipmentId)) {
+            imageCard.setVisibility(View.GONE);
+        } else {
+            imageView.setContentDescription(getString(R.string.equipment_photo));
+        }
+
         findViewById(R.id.btnChat).setOnClickListener(v -> {
             Intent i = new Intent(this, ChatActivity.class);
             i.putExtra(DetectionActivity.EXTRA_EQUIPMENT_ID, equipmentId);
             i.putExtra(DetectionActivity.EXTRA_EQUIPMENT_LABEL, equipmentLabel);
             startActivity(i);
         });
+    }
+
+    private boolean bindCatalogPhoto(ImageView imageView, String classId) {
+        if (classId == null) return false;
+        String assetPath = "equipment_photos/" + classId + ".jpg";
+        try (InputStream in = getAssets().open(assetPath)) {
+            Bitmap ref = BitmapFactory.decodeStream(in);
+            if (ref == null) return false;
+            imageView.setImageBitmap(ref);
+            return true;
+        } catch (IOException e) {
+            return false;
+        }
     }
 
     private static String join(List<String> items) {

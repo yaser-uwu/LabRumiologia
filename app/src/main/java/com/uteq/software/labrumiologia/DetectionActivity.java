@@ -11,6 +11,7 @@ import android.graphics.Rect;
 import android.graphics.YuvImage;
 import android.os.Bundle;
 import android.view.View;
+import android.view.ViewGroup;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -226,7 +227,21 @@ public class DetectionActivity extends AppCompatActivity {
         overlayView.setDetections(latestDetections, selectedIndex);
         adapter.submit(latestDetections, selectedIndex);
         detectionsList.setVisibility(latestDetections.isEmpty() ? View.GONE : View.VISIBLE);
-        statusText.setText(latestDetections.isEmpty() ? R.string.detecting : R.string.detection_ready);
+        ViewGroup.LayoutParams lp = detectionsList.getLayoutParams();
+        if (lp != null) {
+            float density = getResources().getDisplayMetrics().density;
+            lp.height = latestDetections.size() > 2
+                    ? Math.round(168 * density)
+                    : ViewGroup.LayoutParams.WRAP_CONTENT;
+            detectionsList.setLayoutParams(lp);
+        }
+        if (latestDetections.isEmpty()) {
+            statusText.setText(R.string.no_detections);
+        } else if (latestDetections.size() == 1) {
+            statusText.setText(R.string.detection_ready);
+        } else {
+            statusText.setText(getString(R.string.detections_ready, latestDetections.size()));
+        }
     }
 
     @Override

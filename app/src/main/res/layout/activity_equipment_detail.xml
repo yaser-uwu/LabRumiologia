@@ -33,6 +33,32 @@
             android:textColor="@color/white"
             android:textSize="13sp" />
 
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/equipmentImageCard"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            app:cardBackgroundColor="@color/primary_soft"
+            app:cardCornerRadius="20dp"
+            app:cardElevation="0dp"
+            app:strokeColor="@color/primary_soft"
+            app:strokeWidth="0dp">
+
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="240dp"
+                android:padding="12dp">
+
+                <ImageView
+                    android:id="@+id/equipmentImage"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:adjustViewBounds="true"
+                    android:contentDescription="@string/equipment_photo"
+                    android:scaleType="fitCenter" />
+            </FrameLayout>
+        </com.google.android.material.card.MaterialCardView>
+
         <TextView
             android:id="@+id/equipmentFunction"
             android:layout_width="match_parent"
